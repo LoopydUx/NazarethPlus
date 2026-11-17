@@ -1,0 +1,806 @@
+{
+  "models": [
+    {
+      "buildingId": "way/1072682430",
+      "filename": "ceca39ebb1ea4e6894a7760ebf9779c5.glb",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "@id": "way/1072682430",
+          "building": "yes",
+          "building_variants": [],
+          "address": {
+            "street": "",
+            "house_number": "",
+            "city": "Nazareth",
+            "postal_code": "",
+            "full_address": "Nazareth"
+          },
+          "neighborhood_id": "",
+          "neighborhood_name": "",
+          "id": "d571dc96-0111-45cd-8406-4c2e75a14c8d",
+          "city": "Nazareth",
+          "source": "mapbox_capture",
+          "building_type": "building",
+          "created_at": "2026-10-05T21:26:02.340160+00:00",
+          "updated_at": "2026-10-05T21:26:02.340181+00:00"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                35.3006065,
+                32.71264
+              ],
+              [
+                35.3008412,
+                32.7124154
+              ],
+              [
+                35.3009594,
+                32.7125028
+              ],
+              [
+                35.3007247,
+                32.7127274
+              ],
+              [
+                35.3006065,
+                32.71264
+              ]
+            ]
+          ]
+        },
+        "id": "way/1072682430"
+      },
+      "coordinates": [
+        35.30078295,
+        32.7125714
+      ],
+      "rotation": 225.0,
+      "scale": 1.21,
+      "altitudeOffset": 0.0
+    },
+    {
+      "buildingId": "bldg-1792530028154-g20nka",
+      "filename": "63765f1a7f504e88bc69cfc908301b6b.glb",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "id": "bldg-1792530028154-g20nka",
+          "source": "manual_draw",
+          "city": "Nazareth",
+          "created_at": "2026-10-20T21:00:28.154Z",
+          "updated_at": "2026-10-20T21:05:56.567485+00:00",
+          "name": "عين العذراء",
+          "building_type": "cultural",
+          "building_variants": [
+            "heritage_site"
+          ],
+          "address": {
+            "street": "",
+            "house_number": "",
+            "city": "Nazareth",
+            "postal_code": "",
+            "full_address": "Nazareth"
+          },
+          "neighborhood_id": "174dcc06-653f-425b-b70e-4f7ee6255624",
+          "neighborhood_name": "الروم",
+          "up_user_edited": true,
+          "up_origin": "user"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                35.301412,
+                32.706233
+              ],
+              [
+                35.301354,
+                32.706159
+              ],
+              [
+                35.301417,
+                32.706127
+              ],
+              [
+                35.301471,
+                32.706202
+              ],
+              [
+                35.301412,
+                32.706233
+              ]
+            ]
+          ]
+        }
+      },
+      "coordinates": [
+        35.3014135,
+        32.706180249999996
+      ],
+      "rotation": 226.0,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "scale": 1.8,
+      "scaleX": 1.8,
+      "scaleY": 1.8,
+      "scaleZ": 1.8,
+      "offsetEast": 0.0,
+      "offsetNorth": 0.0,
+      "altitudeOffset": 0.0
+    },
+    {
+      "buildingId": "2febe5f1-1db2-400e-b905-f28445661560",
+      "filename": "e9f1f40e676d454da9ba651aed65bb42.glb",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "@id": "way/583523590",
+          "addr:city": "الناصرة",
+          "amenity": "place_of_worship",
+          "building": "yes",
+          "name": "مسجد النبي سعين",
+          "name:ar": "مسجد النبي سعين",
+          "religion": "muslim",
+          "wikidata": "Q2920690",
+          "building_type": "religious",
+          "building_variants": [
+            "mosque"
+          ],
+          "address": {
+            "street": "",
+            "house_number": "",
+            "city": "الناصرة",
+            "postal_code": "",
+            "full_address": "الناصرة"
+          },
+          "neighborhood_id": "",
+          "neighborhood_name": "",
+          "id": "2febe5f1-1db2-400e-b905-f28445661560",
+          "city": "Nazareth",
+          "source": "mapbox_capture",
+          "created_at": "2026-09-07T19:18:57.641341+00:00",
+          "updated_at": "2026-10-21T20:16:09.678532+00:00",
+          "up_user_edited": true,
+          "up_origin": "user"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                35.2956328,
+                32.7087607
+              ],
+              [
+                35.2946795,
+                32.7083508
+              ],
+              [
+                35.2949641,
+                32.7079493
+              ],
+              [
+                35.2956482,
+                32.7082662
+              ],
+              [
+                35.2956023,
+                32.7083145
+              ],
+              [
+                35.2956718,
+                32.7083665
+              ],
+              [
+                35.295612,
+                32.7085308
+              ],
+              [
+                35.2956808,
+                32.708583
+              ],
+              [
+                35.2956328,
+                32.7087607
+              ]
+            ]
+          ]
+        },
+        "id": "way/583523590"
+      },
+      "coordinates": [
+        35.2954364375,
+        32.708390224999995
+      ],
+      "rotation": 242.0,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "scale": 2.05,
+      "scaleX": 2.05,
+      "scaleY": 2.05,
+      "scaleZ": 2.05,
+      "offsetEast": 0.5,
+      "offsetNorth": -9.0,
+      "altitudeOffset": 0.0
+    },
+    {
+      "buildingId": "a64cd6ea-b32e-48de-9b73-8a0a5aac7ae1",
+      "filename": "d13c221c18d142bd86cf6d83fe6b9e58.glb",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "@id": "way/741277388",
+          "addr:city": "الناصرة",
+          "addr:street": "807",
+          "amenity": "townhall",
+          "building": "yes",
+          "name": "بلدية الناصرة",
+          "name:ar": "بلدية الناصرة",
+          "name:en": "Nazareth Municipality",
+          "name:he": "עיריית נצרת",
+          "phone": "+97246459365",
+          "townhall:type": "city",
+          "website": "http://www.nazareth.muni.il/Pages/default.aspx",
+          "building_type": "governmental",
+          "building_variants": [
+            "municipality"
+          ],
+          "address": {
+            "street": "807",
+            "house_number": "",
+            "city": "الناصرة",
+            "postal_code": "",
+            "full_address": "807, الناصرة"
+          },
+          "neighborhood_id": "8da24f7e-70bc-4fe3-bade-b38dc9dada4f",
+          "neighborhood_name": "الحارة الشرقية",
+          "id": "a64cd6ea-b32e-48de-9b73-8a0a5aac7ae1",
+          "city": "Nazareth",
+          "source": "mapbox_capture",
+          "created_at": "2026-10-30T17:46:01.496977+00:00",
+          "updated_at": "2026-10-30T17:46:01.496990+00:00",
+          "up_user_edited": true,
+          "up_origin": "user"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                35.2995331,
+                32.6961071
+              ],
+              [
+                35.2995117,
+                32.6961883
+              ],
+              [
+                35.2990664,
+                32.696089
+              ],
+              [
+                35.2993642,
+                32.6952584
+              ],
+              [
+                35.2994473,
+                32.6952832
+              ],
+              [
+                35.2996718,
+                32.6961247
+              ],
+              [
+                35.2995331,
+                32.6961071
+              ]
+            ]
+          ]
+        },
+        "id": "way/741277388"
+      },
+      "coordinates": [
+        35.29943241666667,
+        32.69584178333333
+      ],
+      "rotation": 254.0,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "scale": 1.55,
+      "scaleX": 1.55,
+      "scaleY": 1.55,
+      "scaleZ": 1.55,
+      "offsetEast": 4.5,
+      "offsetNorth": -12.0,
+      "altitudeOffset": 0.0
+    },
+    {
+      "buildingId": "way/1157250968",
+      "filename": "be7dc716220946ec879ac47c85160f02.glb",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "@id": "way/1157250968",
+          "alt_name": "كنيسة القديس جبرائيل",
+          "alt_name:ar": "كنيسة القديس جبرائيل",
+          "alt_name:de": "Sankt-Gabriel-Kirche",
+          "alt_name:en": "St. Gabriel Church",
+          "alt_name:fr": "Église Saint-Gabriel",
+          "alt_name:it": "Chiesa di San Gabriele",
+          "alt_name:ru": "Церковь архангела Гавриила",
+          "amenity": "place_of_worship",
+          "building": "church",
+          "denomination": "greek_orthodox",
+          "name": "كنيسة البشارة للروم الأرثوذكس",
+          "name:ar": "كنيسة البشارة للروم الأرثوذكس",
+          "name:el": "Ορθόδοξος Ναός του Ευαγγελισμού",
+          "name:en": "Greek Orthodox Church of the Annunciation",
+          "religion": "christian",
+          "start_date": "1763",
+          "wikidata": "Q5293153",
+          "wikipedia": "en:Greek Orthodox Church of the Annunciation",
+          "wikipedia:en": "Greek Orthodox Church of the Annunciation"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                35.3016168,
+                32.7071338
+              ],
+              [
+                35.3015804,
+                32.7070012
+              ],
+              [
+                35.3018168,
+                32.7069553
+              ],
+              [
+                35.3018531,
+                32.7070879
+              ],
+              [
+                35.3016168,
+                32.7071338
+              ]
+            ]
+          ]
+        },
+        "id": "way/1157250968"
+      },
+      "coordinates": [
+        35.301716775,
+        32.70704455
+      ],
+      "rotation": 202.0,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "scale": 0.9,
+      "scaleX": 0.9,
+      "scaleY": 0.9,
+      "scaleZ": 0.9,
+      "offsetEast": 0.0,
+      "offsetNorth": 0.0,
+      "altitudeOffset": 0.0
+    },
+    {
+      "buildingId": "bldg-1793468222984-6aq6wb",
+      "filename": "9a91a59c577a41e1af48248d8cdd6ae9.glb",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "height": 3,
+          "min_height": 0,
+          "type": "mosque",
+          "extrude": "true",
+          "underground": "false",
+          "source_layer": "building",
+          "mapbox_id": "587612457",
+          "id": "bldg-1793468222984-6aq6wb",
+          "source": "mapbox_capture",
+          "city": "Nazareth",
+          "created_at": "2026-10-31T17:37:02.984Z",
+          "updated_at": "2026-10-31T17:37:53.279262+00:00",
+          "name": "المسجد الابيض",
+          "building_type": "religious",
+          "building_variants": [
+            "mosque"
+          ],
+          "number_of_floors": 1,
+          "building:levels": 1,
+          "address": {
+            "street": "",
+            "house_number": "",
+            "city": "Nazareth",
+            "postal_code": "",
+            "full_address": "Nazareth"
+          },
+          "neighborhood_id": "",
+          "neighborhood_name": "",
+          "up_user_edited": true,
+          "up_origin": "user"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                35.29759705066681,
+                32.703568333336094
+              ],
+              [
+                35.29776334762573,
+                32.703538992103034
+              ],
+              [
+                35.29771909117699,
+                32.70337310110391
+              ],
+              [
+                35.29759168624878,
+                32.70339567132601
+              ],
+              [
+                35.29756352305412,
+                32.70345209685625
+              ],
+              [
+                35.29759705066681,
+                32.703568333336094
+              ]
+            ]
+          ]
+        }
+      },
+      "coordinates": [
+        35.297646939754486,
+        32.703465638945055
+      ],
+      "rotation": 282.0,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "scale": 1.0,
+      "scaleX": 1.0,
+      "scaleY": 1.0,
+      "scaleZ": 1.0,
+      "offsetEast": 0.0,
+      "offsetNorth": 0.0,
+      "altitudeOffset": 0.0
+    },
+    {
+      "buildingId": "bldg-1793470246111-909x5t",
+      "filename": "d76d587ba70849a38d6bc37b05a2ebd4.glb",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "height": 3,
+          "min_height": 0,
+          "type": "church",
+          "extrude": "true",
+          "underground": "false",
+          "source_layer": "building",
+          "mapbox_id": "97417380",
+          "id": "bldg-1793470246111-909x5t",
+          "source": "mapbox_capture",
+          "city": "Nazareth",
+          "created_at": "2026-10-31T18:10:46.111Z",
+          "updated_at": "2026-10-31T18:10:47.317675+00:00",
+          "name": "",
+          "building_type": "church"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                35.297542,
+                32.702255
+              ],
+              [
+                35.297568,
+                32.702249
+              ],
+              [
+                35.297594,
+                32.702229
+              ],
+              [
+                35.298147,
+                32.702104
+              ],
+              [
+                35.298129,
+                32.702008
+              ],
+              [
+                35.298206,
+                32.701994
+              ],
+              [
+                35.298193,
+                32.701894
+              ],
+              [
+                35.298096,
+                32.701913
+              ],
+              [
+                35.298073,
+                32.701828
+              ],
+              [
+                35.297951,
+                32.701853
+              ],
+              [
+                35.297509,
+                32.701955
+              ],
+              [
+                35.297476,
+                32.701953
+              ],
+              [
+                35.297456,
+                32.701975
+              ],
+              [
+                35.297454,
+                32.702013
+              ],
+              [
+                35.297466,
+                32.702069
+              ],
+              [
+                35.297479,
+                32.702134
+              ],
+              [
+                35.297495,
+                32.702199
+              ],
+              [
+                35.297496,
+                32.702203
+              ],
+              [
+                35.297498,
+                32.702223
+              ],
+              [
+                35.29751,
+                32.702245
+              ],
+              [
+                35.297542,
+                32.702255
+              ]
+            ]
+          ]
+        }
+      },
+      "coordinates": [
+        35.297716900000005,
+        32.702064799999995
+      ],
+      "rotation": 13.0,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "scale": 1.0,
+      "scaleX": 1.0,
+      "scaleY": 1.0,
+      "scaleZ": 1.0,
+      "offsetEast": 9.5,
+      "offsetNorth": -4.0,
+      "altitudeOffset": 0.0
+    },
+    {
+      "buildingId": "eb8469ea-cd82-4d6c-86c0-96b7c9e98ca8",
+      "filename": "97a598719a7f4a7d89ce3f3021c4e628.glb",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "@id": "relation/14434382",
+          "building": "yes",
+          "type": "multipolygon",
+          "building_type": "mixed_use",
+          "building_variants": [
+            "hospitality",
+            "commercial"
+          ],
+          "mixed_use_variants": {
+            "hospitality": [
+              "hotel"
+            ],
+            "commercial": [
+              "bank",
+              "cafe"
+            ]
+          },
+          "mixed_use_variant_names": {
+            "hospitality": {
+              "hotel": "ريمونيم"
+            },
+            "commercial": {
+              "bank": "مركنتيل",
+              "cafe": "بوظة شفاعمرو"
+            }
+          },
+          "address": {
+            "street": "",
+            "house_number": "",
+            "city": "Nazareth",
+            "postal_code": "",
+            "full_address": "Nazareth"
+          },
+          "neighborhood_id": "8da24f7e-70bc-4fe3-bade-b38dc9dada4f",
+          "neighborhood_name": "الحارة الشرقية",
+          "id": "eb8469ea-cd82-4d6c-86c0-96b7c9e98ca8",
+          "city": "Nazareth",
+          "source": "mapbox_capture",
+          "created_at": "2026-11-01T18:04:38.492595+00:00",
+          "updated_at": "2026-11-01T18:04:38.492595+00:00",
+          "up_user_edited": true,
+          "up_origin": "user"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                35.3052655,
+                32.7050275
+              ],
+              [
+                35.305064,
+                32.7050563
+              ],
+              [
+                35.3049113,
+                32.7050781
+              ],
+              [
+                35.3047129,
+                32.7051065
+              ],
+              [
+                35.3046887,
+                32.7049862
+              ],
+              [
+                35.304638,
+                32.7047353
+              ],
+              [
+                35.3048363,
+                32.704707
+              ],
+              [
+                35.3048424,
+                32.7047371
+              ],
+              [
+                35.3050513,
+                32.7047073
+              ],
+              [
+                35.3050615,
+                32.7047576
+              ],
+              [
+                35.3052068,
+                32.7047369
+              ],
+              [
+                35.3052412,
+                32.7049072
+              ],
+              [
+                35.3052655,
+                32.7050275
+              ]
+            ],
+            [
+              [
+                35.3050242,
+                32.7048595
+              ],
+              [
+                35.3048715,
+                32.7048813
+              ],
+              [
+                35.304887,
+                32.7049578
+              ],
+              [
+                35.3050397,
+                32.704936
+              ],
+              [
+                35.3050242,
+                32.7048595
+              ]
+            ]
+          ]
+        },
+        "id": "relation/14434382"
+      },
+      "coordinates": [
+        35.30495889375,
+        32.704886099999996
+      ],
+      "rotation": 6.0,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "scale": 1.0,
+      "scaleX": 1.0,
+      "scaleY": 1.0,
+      "scaleZ": 1.0,
+      "offsetEast": 0.0,
+      "offsetNorth": 0.0,
+      "altitudeOffset": 0.0
+    },
+    {
+      "buildingId": "way/623457838",
+      "filename": "42134dd487224ea9a84c0cb3b68752e6.glb",
+      "feature": {
+        "type": "Feature",
+        "properties": {
+          "@id": "way/623457838",
+          "building": "yes"
+        },
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                35.3025242,
+                32.6921405
+              ],
+              [
+                35.3025202,
+                32.6920335
+              ],
+              [
+                35.3027599,
+                32.692027
+              ],
+              [
+                35.302764,
+                32.692134
+              ],
+              [
+                35.3025242,
+                32.6921405
+              ]
+            ]
+          ]
+        },
+        "id": "way/623457838"
+      },
+      "coordinates": [
+        35.302642075,
+        32.69208375
+      ],
+      "rotation": 258.0,
+      "pitch": 0.0,
+      "roll": 0.0,
+      "scale": 1.05,
+      "scaleX": 1.05,
+      "scaleY": 1.05,
+      "scaleZ": 1.05,
+      "offsetEast": 0.0,
+      "offsetNorth": 0.0,
+      "altitudeOffset": 0.0
+    }
+  ]
+}

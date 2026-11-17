@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: CityCoordinateFrame
+  m_EditorClassIdentifier: Assembly-CSharp:NazarethPlusCity:CityCoordinateFrame
+  originSaved: 1
+  originLongitude: 35.29041328376967
+  originLatitude: 32.704708437434554
+  orientation: Unity meters. +X east, +Y up, +Z north. GeoJSON is WGS84 longitude,
+    latitude. Altitude is ignored. The flat ground plane is Y = 0. The origin is
+    the saved centroid of the city boundary and is reused on every rebuild.
