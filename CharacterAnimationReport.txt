@@ -1,0 +1,44 @@
+Nazareth character animation
+Starter Assets clips copied into Assets/NazarethPlusCity/Characters/Animations:
+Idle Idle length=4.933s human=True loop=True rootCurves=True
+Walk Walk_N length=0.967s human=True loop=True rootCurves=True
+Run Run_N length=0.667s human=True loop=True rootCurves=True
+Jump JumpStart length=0.4s human=True loop=False rootCurves=True
+Fall InAir length=2.667s human=True loop=True rootCurves=True
+Land JumpLand length=0.633s human=True loop=False rootCurves=True
+Land walk Walk_N_Land length=0.533s human=True loop=False rootCurves=True
+Land run Run_N_Land length=0.667s human=True loop=False rootCurves=True
+Trooper FBX clip is not used for locomotion: Take 001 length=3.333s
+Prepared Assets/NazarethPlusCity/Characters/Animations/Stand--Idle.anim.fbx as an in-place humanoid clip.
+Prepared Assets/NazarethPlusCity/Characters/Animations/Locomotion--Walk_N.anim.fbx as an in-place humanoid clip.
+Prepared Assets/NazarethPlusCity/Characters/Animations/Locomotion--Run_N.anim.fbx as an in-place humanoid clip.
+Prepared Assets/NazarethPlusCity/Characters/Animations/Locomotion--Walk_N_Land.anim.fbx as an in-place humanoid clip.
+Prepared Assets/NazarethPlusCity/Characters/Animations/Locomotion--Run_N_Land.anim.fbx as an in-place humanoid clip.
+Prepared Assets/NazarethPlusCity/Characters/Animations/Jump--Jump.anim.fbx as an in-place humanoid clip.
+Prepared Assets/NazarethPlusCity/Characters/Animations/Jump--InAir.anim.fbx as an in-place humanoid clip.
+Automatic humanoid mapping succeeded. Hips=pelvis.
+Walk clip average planar speed 0.00 m/s.
+Run clip average planar speed 0.00 m/s.
+Walk root speed was not readable. Foot cycle uses 2.00 m/s.
+Run root speed was not readable. Foot cycle uses 6.00 m/s.
+Built Assets/NazarethPlusCity/Characters/CharacterLocomotion.controller thresholds 0 / 4.20 / 7.50.
+Visual prefab keeps the model and Animator only.
+Gameplay stays on CityWalker. The model is under CharacterVisual.
+PASS gameplay root owns movement and the visual is a child.
+PASS bin placement component remains on the gameplay root.
+PASS first-person camera and bird camera are still present.
+INFO feet offset 0.042 height 1.73
+PASS feet sit on the capsule and the body is human height.
+INFO wall stop moved 0.160 m toward Foundation
+PASS the capsule stops against an obstacle.
+INFO slope 9 deg moved 0.332 grounded True
+PASS the capsule stays on a slope while it moves.
+PASS animation does not move the model.
+PASS avatar is a valid humanoid.
+INFO idle arm-down 0.96 headAbove=True footBelow=True armSymmetry=True
+PASS idle pose is a standing humanoid, not a T-pose.
+PASS walk speed enters the locomotion blend.
+PASS jump trigger enters Jump.
+PASS leaving the ground reaches the air states.
+PASS landing returns toward locomotion.
+Saved Assets/NazarethPlusCity/Scenes/NazarethPlusCity.unity

@@ -5,10 +5,40 @@ namespace NazarethPlusCity
 {
     /// <summary>
     /// Editable defaults for a full-city rebuild. Hand-tuned values on this asset are kept.
-    /// Unity world units are meters. Ground is the horizontal plane Y = 0.
+    /// Unity world units are meters. +X east, +Y up, +Z north.
     /// </summary>
     public class CityGenerationSettings : ScriptableObject
     {
+        [Header("Terrain")]
+        [Tooltip("Source elevation, in metres, that maps to local ground Y = 0. localGroundY = (sourceElevation - elevationOrigin) * worldUnitsPerMetre.")]
+        public float elevationOriginMeters = 131.2f;
+
+        [Tooltip("Vertical scale. Horizontal placement stays on the saved geographic projection.")]
+        public float worldUnitsPerMetre = 1f;
+
+        [Tooltip("Building level base sits this far above the highest terrain under its occupied footprint.")]
+        public float buildingClearanceMeters = 0.03f;
+
+        [Tooltip("Foundations deeper than this are reported for inspection and are still generated.")]
+        public float tallFoundationMeters = 8f;
+
+        [Tooltip("Road and wall edges are split so draped vertices stay within this distance.")]
+        public float surfaceDrapeSpacingMeters = 8f;
+
+        [Tooltip("Foundation perimeter samples, in metres.")]
+        public float foundationSegmentMeters = 4f;
+
+        public float foundationThicknessMeters = 0.2f;
+
+        [Tooltip("How far a draped point may take a height from the nearest terrain triangle when it falls in a gap.")]
+        public float terrainEdgeSearchMeters = 24f;
+
+        [Tooltip("Walker recovers when its feet drop this far below the terrain under it.")]
+        public float fallDropMeters = 8f;
+
+        [Tooltip("Extra space between the capsule feet and the street or terrain at spawn.")]
+        public float spawnClearanceMeters = 0.08f;
+
         [Header("Heights")]
         [Tooltip("Meters per floor when a building has a floor count but no explicit height.")]
         public float floorHeightMeters = 3f;
@@ -62,23 +92,6 @@ namespace NazarethPlusCity
         public float groundUvMeters = 8f;
 
         public float FallbackHeightMeters => Mathf.Max(0.5f, fallbackFloors * Mathf.Max(0.5f, floorHeightMeters));
-    }
-
-    public class CityCoordinateFrame : ScriptableObject
-    {
-        public bool originSaved;
-        public double originLongitude;
-        public double originLatitude;
-
-        [TextArea(3, 8)]
-        public string orientation =
-            "Unity meters. +X east, +Y up, +Z north. " +
-            "GeoJSON is WGS84 longitude, latitude. Altitude is ignored. " +
-            "The flat ground plane is Y = 0. " +
-            "The origin is the saved centroid of the city boundary and is reused on every rebuild.";
-
-        public const string AxisSummary =
-            "1 Unity unit = 1 meter. +X east, +Y up, +Z north. Ground plane Y = 0.";
     }
 
     [Serializable]
@@ -174,7 +187,7 @@ namespace NazarethPlusCity
                 sourceFloorRaw = !string.IsNullOrWhiteSpace(levelsRaw) ? levelsRaw : (floorsRaw ?? ""),
                 meters = settings.FallbackHeightMeters,
                 resolution = "Fallback",
-                detail = "no usable height or floor count; fallback " + settings.fallbackFloors + " floors / " + settings.FallbackHeightMeters.ToString("0.###") + " m"
+                detail = ""
             };
 
             if (TryParseLength(heightRaw, out float height, out string heightNote) && height >= 0.25f && height <= 500f)
@@ -206,7 +219,7 @@ namespace NazarethPlusCity
                 return decision;
             }
 
-            decision.detail += "fallback " + settings.fallbackFloors + " floors / " + settings.FallbackHeightMeters.ToString("0.###") + " m";
+            decision.detail += "no usable height or floor count; fallback " + settings.fallbackFloors + " floors / " + settings.FallbackHeightMeters.ToString("0.###") + " m";
             return decision;
         }
 

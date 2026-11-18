@@ -41,6 +41,28 @@ namespace NazarethPlusCity
             return new Vector3((float)east, 0f, (float)north);
         }
 
+        /// <summary>
+        /// Inverse of Project. Height is not recovered; placements store a ground offset separately.
+        /// The tangent-plane inverse is refined so city-scale positions round-trip to about a millimetre.
+        /// </summary>
+        public void Unproject(double east, double north, out double longitude, out double latitude)
+        {
+            double guessEast = east;
+            double guessNorth = north;
+            InverseTangent(guessEast, guessNorth, 0.0, out longitude, out latitude);
+            for (int i = 0; i < 6; i++)
+            {
+                Project(longitude, latitude, out double actualEast, out double actualNorth);
+                double errorEast = east - actualEast;
+                double errorNorth = north - actualNorth;
+                if (errorEast * errorEast + errorNorth * errorNorth < 1e-8)
+                    return;
+                guessEast += errorEast;
+                guessNorth += errorNorth;
+                InverseTangent(guessEast, guessNorth, 0.0, out longitude, out latitude);
+            }
+        }
+
         public void Project(double longitude, double latitude, out double east, out double north)
         {
             GeodeticToEcef(latitude, longitude, 0.0, out double x, out double y, out double z);
@@ -60,6 +82,36 @@ namespace NazarethPlusCity
             double a = Math.Sin(dLat * 0.5) * Math.Sin(dLat * 0.5)
                        + Math.Cos(rlat1) * Math.Cos(rlat2) * Math.Sin(dLon * 0.5) * Math.Sin(dLon * 0.5);
             return EquatorialRadius * 2.0 * Math.Asin(Math.Min(1.0, Math.Sqrt(a)));
+        }
+
+        void InverseTangent(double east, double north, double up, out double longitude, out double latitude)
+        {
+            double dx = -_sinLon * east - _sinLat * _cosLon * north + _cosLat * _cosLon * up;
+            double dy = _cosLon * east - _sinLat * _sinLon * north + _cosLat * _sinLon * up;
+            double dz = _cosLat * north + _sinLat * up;
+            EcefToGeodetic(_x0 + dx, _y0 + dy, _z0 + dz, out latitude, out longitude);
+        }
+
+        static void EcefToGeodetic(double x, double y, double z, out double latitudeDeg, out double longitudeDeg)
+        {
+            longitudeDeg = Math.Atan2(y, x) * 180.0 / Math.PI;
+            double p = Math.Sqrt(x * x + y * y);
+            double latitude = Math.Atan2(z, p * (1.0 - EccentricitySquared));
+            for (int i = 0; i < 10; i++)
+            {
+                double sin = Math.Sin(latitude);
+                double n = EquatorialRadius / Math.Sqrt(1.0 - EccentricitySquared * sin * sin);
+                double next = Math.Atan2(z + EccentricitySquared * n * sin, p);
+                if (Math.Abs(next - latitude) < 1e-14)
+                {
+                    latitude = next;
+                    break;
+                }
+
+                latitude = next;
+            }
+
+            latitudeDeg = latitude * 180.0 / Math.PI;
         }
 
         static void GeodeticToEcef(double latDeg, double lonDeg, double height, out double x, out double y, out double z)

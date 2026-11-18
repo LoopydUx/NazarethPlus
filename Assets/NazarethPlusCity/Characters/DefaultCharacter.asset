@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f2c1a8e4b7d4e0a9c3f5d1b8e6a2c47, type: 3}
+  m_Name: DefaultCharacter
+  m_EditorClassIdentifier: 
+  visualPrefab: {fileID: 745703013679320848, guid: a1285f68132d9d1439fce578659cb0a8, type: 3}
+  avatar: {fileID: 9000000, guid: 639b6ce73b347e5429ac0526c9c29094, type: 3}
+  visualScale: {x: 0.89415246, y: 0.89415246, z: 0.89415246}
+  visualEuler: {x: -0, y: 0, z: 0}
+  footOffset: {x: 0.00014841557, y: 0.12363148, z: 0.07288563}
+  locomotionController: {fileID: 9100000, guid: 87900e8bd9301d34bb9f47d924913252, type: 2}
+  animationOverride: {fileID: 0}
+  idle: {fileID: -3100369314251171874, guid: 12e52e465ed793a4d801955e9f964a82, type: 3}
+  walk: {fileID: 1657602633327794031, guid: 8269a9f8cf495034c817722ac21f309f, type: 3}
+  run: {fileID: 6564411413370888346, guid: 16114d403eabb53438de032c6f0d1deb, type: 3}
+  jump: {fileID: 7478122292733868173, guid: 98f277b0c8055e143b2fcf058d3c27dc, type: 3}
+  fall: {fileID: -2702400367771620057, guid: 063aa479676c4084ebf187660ca0a7b8, type: 3}
+  land: {fileID: -9098803823909532060, guid: 98f277b0c8055e143b2fcf058d3c27dc, type: 3}
+  landWalk: {fileID: 3062299877480904481, guid: 325a26d62b61fa94cb3c97c435efebc5, type: 3}
+  landRun: {fileID: -2817517482862745934, guid: 3c033631149b9c541bcf155cd94cccba, type: 3}
+  walkSpeedThreshold: 4.2
+  runSpeedThreshold: 7.5
+  matchFootCycle: 1
+  walkClipSpeed: 2
+  runClipSpeed: 6
+  capsuleHeight: 1.8
+  capsuleRadius: 0.3
+  capsuleCenterY: 0.9
+  eyeHeight: 1.64
+  cameraTargetHeight: 1.45

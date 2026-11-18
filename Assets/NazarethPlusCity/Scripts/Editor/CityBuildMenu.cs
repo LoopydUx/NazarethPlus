@@ -16,6 +16,24 @@ namespace NazarethPlusCity.EditorTools
             CityImporter.GenerateOrRebuild();
         }
 
+        [MenuItem("NazarethPlusCity/Generate Or Rebuild Terrain")]
+        public static void RebuildTerrain()
+        {
+            CityImporter.RebuildTerrainOnly();
+        }
+
+        [MenuItem("NazarethPlusCity/Reposition Buildings And Generate Foundations")]
+        public static void RepositionBuildings()
+        {
+            CityImporter.RepositionBuildingsAndFoundations();
+        }
+
+        [MenuItem("NazarethPlusCity/Validate Terrain Alignment")]
+        public static void ValidateTerrain()
+        {
+            CityImporter.ValidateTerrainAlignment();
+        }
+
         [MenuItem("NazarethPlusCity/Toggle Boundary Outline")]
         public static void ToggleOutline()
         {
@@ -51,15 +69,22 @@ namespace NazarethPlusCity.EditorTools
             string reportPath = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "NazarethPlusCity_ImportReport.txt");
             try
             {
+                string fingerprintPath = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Assets", "NazarethPlusCity", "Generated", "PlacementFingerprint.txt");
+                if (File.Exists(fingerprintPath))
+                    File.Delete(fingerprintPath);
                 CityImporter.GenerateOrRebuild();
                 int buildings = UnityEngine.Object.FindObjectsByType<BuildingFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
                 int streets = UnityEngine.Object.FindObjectsByType<StreetFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
+                string firstPlacement = File.Exists(fingerprintPath) ? File.ReadAllText(fingerprintPath) : "";
                 CityImporter.GenerateOrRebuild();
                 int buildingsAgain = UnityEngine.Object.FindObjectsByType<BuildingFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
                 int streetsAgain = UnityEngine.Object.FindObjectsByType<StreetFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
+                string secondPlacement = File.Exists(fingerprintPath) ? File.ReadAllText(fingerprintPath) : "";
                 string check = "Rebuild check: buildings " + buildings + " then " + buildingsAgain + "; streets " + streets + " then " + streetsAgain + ".";
                 if (buildings != buildingsAgain || streets != streetsAgain)
                     throw new InvalidOperationException(check + " Counts changed, so the rebuild did not stay one-to-one.");
+                if (firstPlacement.Length == 0 || firstPlacement != secondPlacement)
+                    throw new InvalidOperationException(check + " Building level bases changed on the second rebuild.");
                 File.AppendAllText(reportPath, Environment.NewLine + check + " No duplicate city objects were created." + Environment.NewLine);
                 Debug.Log("NazarethPlusCity batch generation succeeded. " + check);
             }

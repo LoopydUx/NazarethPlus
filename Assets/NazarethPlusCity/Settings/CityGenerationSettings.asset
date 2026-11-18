@@ -44,3 +44,13 @@ MonoBehaviour:
   roofUvMeters: 3.5
   asphaltUvMeters: 4
   groundUvMeters: 8
+  elevationOriginMeters: 131.2
+  worldUnitsPerMetre: 1
+  buildingClearanceMeters: 0.03
+  tallFoundationMeters: 8
+  surfaceDrapeSpacingMeters: 8
+  foundationSegmentMeters: 4
+  foundationThicknessMeters: 0.2
+  terrainEdgeSearchMeters: 24
+  fallDropMeters: 8
+  spawnClearanceMeters: 0.08

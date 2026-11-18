@@ -9,12 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: c4e8b1a09f3d4c7e9b2a6d5f1e0c8a73, type: 3}
   m_Name: CityCoordinateFrame
   m_EditorClassIdentifier: Assembly-CSharp:NazarethPlusCity:CityCoordinateFrame
   originSaved: 1
   originLongitude: 35.29041328376967
   originLatitude: 32.704708437434554
-  orientation: Unity meters. +X east, +Y up, +Z north. GeoJSON is WGS84 longitude,
-    latitude. Altitude is ignored. The flat ground plane is Y = 0. The origin is
-    the saved centroid of the city boundary and is reused on every rebuild.
+  cityId: nazareth
+  orientation: Unity meters. +X east, +Y up, +Z north. Horizontal origin is the saved
+    boundary centroid. localGroundY = (sourceElevation - elevationOrigin) * worldUnitsPerMetre.

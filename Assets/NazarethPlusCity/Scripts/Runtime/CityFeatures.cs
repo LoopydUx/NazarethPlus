@@ -57,6 +57,14 @@ namespace NazarethPlusCity
         public Material roofMaterial;
         public float uvMeters = 2.5f;
 
+        [Header("Terrain placement")]
+        public float levelBaseY;
+        public float meshBaseLocalY;
+        public float foundationDepthMeters;
+        public bool tallFoundation;
+        [TextArea(2, 4)]
+        public string terrainNote;
+
         public float ActiveHeight => useHeightOverride ? Mathf.Max(0.25f, heightOverrideMeters) : resolvedHeightMeters;
 
         void OnEnable()
@@ -96,6 +104,8 @@ namespace NazarethPlusCity
             var block = new MaterialPropertyBlock();
             for (int i = 0; i < renderers.Length; i++)
             {
+                if (renderers[i].GetComponent<BuildingFoundation>() != null)
+                    continue;
                 renderers[i].GetPropertyBlock(block, 0);
                 block.SetColor("_BaseColor", tintOverride);
                 renderers[i].SetPropertyBlock(block, 0);

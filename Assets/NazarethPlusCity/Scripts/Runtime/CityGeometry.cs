@@ -271,6 +271,11 @@ namespace NazarethPlusCity
 
         public static bool FillRoad(Mesh mesh, List<Vector2> worldPolygon, Vector3 worldOrigin, float surfaceY, float uvMeters, out string error)
         {
+            return FillRoad(mesh, worldPolygon, worldOrigin, surfaceY, uvMeters, null, 0f, out error);
+        }
+
+        public static bool FillRoad(Mesh mesh, List<Vector2> worldPolygon, Vector3 worldOrigin, float surfaceY, float uvMeters, Func<Vector2, float> groundY, float maxEdge, out string error)
+        {
             var local = new List<Vector2>(worldPolygon.Count);
             for (int i = 0; i < worldPolygon.Count; i++)
                 local.Add(worldPolygon[i] - new Vector2(worldOrigin.x, worldOrigin.z));
@@ -286,6 +291,8 @@ namespace NazarethPlusCity
             var triangles = new List<int>();
             if (!TryTriangulate(local, null, triangles, out error))
                 return false;
+            if (groundY != null && maxEdge > 0.5f)
+                SubdivideEdges(local, triangles, maxEdge);
 
             var draft = new MeshDraft();
             for (int t = 0; t + 2 < triangles.Count; t += 3)
@@ -293,10 +300,13 @@ namespace NazarethPlusCity
                 Vector2 a = local[triangles[t]];
                 Vector2 b = local[triangles[t + 1]];
                 Vector2 c = local[triangles[t + 2]];
-                Vector3 va = new Vector3(a.x, surfaceY, a.y);
-                Vector3 vb = new Vector3(b.x, surfaceY, b.y);
-                Vector3 vc = new Vector3(c.x, surfaceY, c.y);
-                AddTriFacing(draft, va, vb, vc, Vector3.up,
+                Vector3 va = new Vector3(a.x, RoadY(a, worldOrigin, surfaceY, groundY), a.y);
+                Vector3 vb = new Vector3(b.x, RoadY(b, worldOrigin, surfaceY, groundY), b.y);
+                Vector3 vc = new Vector3(c.x, RoadY(c, worldOrigin, surfaceY, groundY), c.y);
+                Vector3 normal = Vector3.Cross(vb - va, vc - va);
+                if (normal.sqrMagnitude < 1e-8f)
+                    normal = Vector3.up;
+                AddTriFacing(draft, va, vb, vc, normal,
                     WorldUv(va, worldOrigin, uvMeters),
                     WorldUv(vb, worldOrigin, uvMeters),
                     WorldUv(vc, worldOrigin, uvMeters),
@@ -305,6 +315,116 @@ namespace NazarethPlusCity
 
             Apply(mesh, draft, false);
             return true;
+        }
+
+        static float RoadY(Vector2 local, Vector3 worldOrigin, float surfaceY, Func<Vector2, float> groundY)
+        {
+            if (groundY == null)
+                return surfaceY;
+            float ground = groundY(new Vector2(local.x + worldOrigin.x, local.y + worldOrigin.z));
+            return ground + surfaceY - worldOrigin.y;
+        }
+
+        static void SubdivideEdges(List<Vector2> vertices, List<int> triangles, float maxEdge)
+        {
+            for (int pass = 0; pass < 8 && vertices.Count < 24000; pass++)
+            {
+                var mids = new Dictionary<long, int>();
+                var next = new List<int>(triangles.Count * 2);
+                bool split = false;
+                for (int i = 0; i + 2 < triangles.Count; i += 3)
+                {
+                    int a = triangles[i];
+                    int b = triangles[i + 1];
+                    int c = triangles[i + 2];
+                    int ab = EdgeMidpoint(vertices, mids, a, b, maxEdge);
+                    int bc = EdgeMidpoint(vertices, mids, b, c, maxEdge);
+                    int ca = EdgeMidpoint(vertices, mids, c, a, maxEdge);
+                    if (ab >= 0 || bc >= 0 || ca >= 0)
+                        split = true;
+                    EmitSplit(next, a, b, c, ab, bc, ca);
+                }
+
+                triangles.Clear();
+                triangles.AddRange(next);
+                if (!split)
+                    break;
+            }
+        }
+
+        static int EdgeMidpoint(List<Vector2> vertices, Dictionary<long, int> mids, int a, int b, float maxEdge)
+        {
+            if (Vector2.Distance(vertices[a], vertices[b]) <= maxEdge)
+                return -1;
+            int lo = Math.Min(a, b);
+            int hi = Math.Max(a, b);
+            long key = ((long)lo << 32) | (uint)hi;
+            if (mids.TryGetValue(key, out int index))
+                return index;
+            index = vertices.Count;
+            vertices.Add((vertices[a] + vertices[b]) * 0.5f);
+            mids.Add(key, index);
+            return index;
+        }
+
+        static void EmitSplit(List<int> dst, int a, int b, int c, int ab, int bc, int ca)
+        {
+            bool sab = ab >= 0;
+            bool sbc = bc >= 0;
+            bool sca = ca >= 0;
+            if (sab && sbc && sca)
+            {
+                AddTri(dst, a, ab, ca);
+                AddTri(dst, ab, b, bc);
+                AddTri(dst, ca, bc, c);
+                AddTri(dst, ab, bc, ca);
+            }
+            else if (sab && sbc)
+            {
+                AddTri(dst, a, ab, c);
+                AddTri(dst, ab, bc, c);
+                AddTri(dst, ab, b, bc);
+            }
+            else if (sbc && sca)
+            {
+                AddTri(dst, a, b, bc);
+                AddTri(dst, a, bc, ca);
+                AddTri(dst, ca, bc, c);
+            }
+            else if (sca && sab)
+            {
+                AddTri(dst, a, ab, ca);
+                AddTri(dst, ab, b, c);
+                AddTri(dst, ab, c, ca);
+            }
+            else if (sab)
+            {
+                AddTri(dst, a, ab, c);
+                AddTri(dst, ab, b, c);
+            }
+            else if (sbc)
+            {
+                AddTri(dst, a, b, bc);
+                AddTri(dst, a, bc, c);
+            }
+            else if (sca)
+            {
+                AddTri(dst, a, b, ca);
+                AddTri(dst, ca, b, c);
+            }
+            else
+            {
+                AddTri(dst, a, b, c);
+            }
+        }
+
+        static void AddTri(List<int> dst, int a, int b, int c)
+        {
+            if (a == b || b == c || c == a)
+                return;
+            dst.Add(a);
+            dst.Add(b);
+            dst.Add(c);
         }
 
         public static bool FillGround(Mesh mesh, IList<Vector2> outer, List<List<Vector2>> holes, float uvMeters, out string error)
@@ -348,9 +468,14 @@ namespace NazarethPlusCity
 
         public static void FillBorderWalls(Mesh mesh, PlayableRegion region, float height, float thickness, float extension, float embed)
         {
+            FillBorderWalls(mesh, region, height, thickness, extension, embed, null, 0f);
+        }
+
+        public static void FillBorderWalls(Mesh mesh, PlayableRegion region, float height, float thickness, float extension, float embed, Func<Vector2, float> ground, float maxSegment)
+        {
             var draft = new MeshDraft();
-            AddRingWalls(draft, region, region.Outers, height, thickness, extension, embed);
-            AddRingWalls(draft, region, region.Holes, height, thickness, extension, embed);
+            AddRingWalls(draft, region, region.Outers, height, thickness, extension, embed, ground, maxSegment);
+            AddRingWalls(draft, region, region.Holes, height, thickness, extension, embed, ground, maxSegment);
             Apply(mesh, draft, false);
         }
 
@@ -376,7 +501,8 @@ namespace NazarethPlusCity
             {
                 for (int i = 0; i < feature.parts.Count; i++)
                 {
-                    var child = feature.transform.childCount > i ? feature.transform.GetChild(i).gameObject : new GameObject("Part_" + i);
+                    Transform existing = feature.transform.Find("Part_" + i);
+                    var child = existing != null ? existing.gameObject : new GameObject("Part_" + i);
                     child.transform.SetParent(feature.transform, false);
                     child.name = "Part_" + i;
                     var mesh = EnsureMesh(child, feature.name + "_Part_" + i);
@@ -442,7 +568,7 @@ namespace NazarethPlusCity
                 if (host != feature.gameObject)
                     host.transform.SetParent(feature.transform, false);
                 var mesh = EnsureMesh(host, feature.name + (surfaces.Count == 1 ? "" : "_Part_" + s));
-                if (!FillRoad(mesh, surfaces[s], feature.transform.position, feature.surfaceY, feature.uvMeters, out _))
+                if (!FillRoad(mesh, surfaces[s], feature.transform.position, feature.surfaceY, feature.uvMeters, TerrainGroundSampler, 8f, out _))
                     continue;
                 var filter = host.GetComponent<MeshFilter>() ?? host.AddComponent<MeshFilter>();
                 filter.sharedMesh = mesh;
@@ -501,43 +627,69 @@ namespace NazarethPlusCity
             return mesh;
         }
 
-        static void AddRingWalls(MeshDraft draft, PlayableRegion region, List<Vector2[]> rings, float height, float thickness, float extension, float embed)
+        static float TerrainGroundSampler(Vector2 world)
         {
+            if (TerrainGround.TryHeight(world.x, world.y, out float y, 24f))
+                return y;
+            return 0f;
+        }
+
+        static void AddRingWalls(MeshDraft draft, PlayableRegion region, List<Vector2[]> rings, float height, float thickness, float extension, float embed, Func<Vector2, float> ground, float maxSegment)
+        {
+            float limit = maxSegment > 0.5f ? maxSegment : 100000f;
             for (int r = 0; r < rings.Count; r++)
             {
                 var ring = rings[r];
                 for (int i = 0; i < ring.Length; i++)
                 {
-                    Vector2 a = ring[i];
-                    Vector2 b = ring[(i + 1) % ring.Length];
-                    Vector2 delta = b - a;
-                    float length = delta.magnitude;
+                    Vector2 start = ring[i];
+                    Vector2 end = ring[(i + 1) % ring.Length];
+                    float length = Vector2.Distance(start, end);
                     if (length < 0.05f)
                         continue;
-                    Vector2 dir = delta / length;
-                    Vector2 left = new Vector2(-dir.y, dir.x);
-                    bool leftPlayable = region.Contains((a + b) * 0.5f + left * 0.2f);
-                    Vector2 outward = leftPlayable ? -left : left;
-                    Vector2 innerA = a - dir * extension;
-                    Vector2 innerB = b + dir * extension;
-                    Vector2 outerA = innerA + outward * thickness;
-                    Vector2 outerB = innerB + outward * thickness;
-                    AddBox(draft, innerA, innerB, outerB, outerA, -embed, height, outward);
+                    int steps = Mathf.Max(1, Mathf.CeilToInt(length / limit));
+                    for (int s = 0; s < steps; s++)
+                    {
+                        Vector2 a = Vector2.Lerp(start, end, s / (float)steps);
+                        Vector2 b = Vector2.Lerp(start, end, (s + 1) / (float)steps);
+                        Vector2 delta = b - a;
+                        float span = delta.magnitude;
+                        if (span < 0.02f)
+                            continue;
+                        Vector2 dir = delta / span;
+                        Vector2 left = new Vector2(-dir.y, dir.x);
+                        bool leftPlayable = region.Contains((a + b) * 0.5f + left * 0.2f);
+                        Vector2 outward = leftPlayable ? -left : left;
+                        Vector2 innerA = a - dir * extension;
+                        Vector2 innerB = b + dir * extension;
+                        Vector2 outerA = innerA + outward * thickness;
+                        Vector2 outerB = innerB + outward * thickness;
+                        float ga = GroundOrZero(ground, innerA);
+                        float gb = GroundOrZero(ground, innerB);
+                        float gc = GroundOrZero(ground, outerB);
+                        float gd = GroundOrZero(ground, outerA);
+                        AddBox(draft, innerA, innerB, outerB, outerA, ga - embed, gb - embed, gc - embed, gd - embed, ga + height, gb + height, gc + height, gd + height, outward);
+                    }
                 }
             }
         }
 
-        static void AddBox(MeshDraft draft, Vector2 a, Vector2 b, Vector2 c, Vector2 d, float y0, float y1, Vector2 outward)
+        static float GroundOrZero(Func<Vector2, float> ground, Vector2 point)
+        {
+            return ground != null ? ground(point) : 0f;
+        }
+
+        static void AddBox(MeshDraft draft, Vector2 a, Vector2 b, Vector2 c, Vector2 d, float ya0, float yb0, float yc0, float yd0, float ya1, float yb1, float yc1, float yd1, Vector2 outward)
         {
             Vector3 nOut = new Vector3(outward.x, 0f, outward.y);
-            Vector3 a0 = new Vector3(a.x, y0, a.y);
-            Vector3 b0 = new Vector3(b.x, y0, b.y);
-            Vector3 c0 = new Vector3(c.x, y0, c.y);
-            Vector3 d0 = new Vector3(d.x, y0, d.y);
-            Vector3 a1 = new Vector3(a.x, y1, a.y);
-            Vector3 b1 = new Vector3(b.x, y1, b.y);
-            Vector3 c1 = new Vector3(c.x, y1, c.y);
-            Vector3 d1 = new Vector3(d.x, y1, d.y);
+            Vector3 a0 = new Vector3(a.x, ya0, a.y);
+            Vector3 b0 = new Vector3(b.x, yb0, b.y);
+            Vector3 c0 = new Vector3(c.x, yc0, c.y);
+            Vector3 d0 = new Vector3(d.x, yd0, d.y);
+            Vector3 a1 = new Vector3(a.x, ya1, a.y);
+            Vector3 b1 = new Vector3(b.x, yb1, b.y);
+            Vector3 c1 = new Vector3(c.x, yc1, c.y);
+            Vector3 d1 = new Vector3(d.x, yd1, d.y);
             Vector2 uv = Vector2.zero;
             AddTriFacing(draft, a0, b0, b1, -nOut, uv, uv, uv, false);
             AddTriFacing(draft, a0, b1, a1, -nOut, uv, uv, uv, false);

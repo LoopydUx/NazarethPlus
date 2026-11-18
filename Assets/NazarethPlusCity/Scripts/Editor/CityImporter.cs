@@ -113,6 +113,9 @@ namespace NazarethPlusCity.EditorTools
                 EditorUtility.SetDirty(frame);
             }
 
+            frame.orientation = "Unity meters. +X east, +Y up, +Z north. Horizontal origin is the saved boundary centroid. localGroundY = (sourceElevation - elevationOrigin) * worldUnitsPerMetre.";
+            EditorUtility.SetDirty(frame);
+
             var projection = GeoProjection.FromOrigin(frame.originLongitude, frame.originLatitude);
             for (int i = 0; i < rawOuters.Count; i++)
                 outers.Add(CityGeometry.ProjectRing(rawOuters[i], projection));
@@ -145,27 +148,36 @@ namespace NazarethPlusCity.EditorTools
             var boundaryRoot = Folder(nazareth.transform, "Boundary");
             var environment = Folder(nazareth.transform, "Environment");
 
-            if (AssetDatabase.IsValidFolder("Assets/NazarethPlusCity/Generated/Meshes"))
-                AssetDatabase.DeleteAsset("Assets/NazarethPlusCity/Generated/Meshes");
+            DeleteGeneratedFolder("Assets/NazarethPlusCity/Generated/Meshes");
+            DeleteGeneratedFolder("Assets/NazarethPlusCity/Generated/Terrain");
+            DeleteGeneratedFolder("Assets/NazarethPlusCity/Generated/Foundations");
             CityMaterialFactory.EnsureFolder("Assets/NazarethPlusCity/Generated/Meshes");
+            CityMaterialFactory.EnsureFolder("Assets/NazarethPlusCity/Generated/Terrain");
+            CityMaterialFactory.EnsureFolder("Assets/NazarethPlusCity/Generated/Foundations");
             var library = new MeshLibrary("Assets/NazarethPlusCity/Generated/Meshes");
+            var foundations = new MeshLibrary("Assets/NazarethPlusCity/Generated/Foundations");
 
             AssetDatabase.StartAssetEditing();
+            TerrainHeightField terrainField = null;
             try
             {
                 BuildBoundary(report, settings, materials, library, boundaryRoot, groundRoot, borderFeature, outers, holes, existing, used, out PlayableRegion region, out PathsD boundaryPaths);
-                EditorUtility.DisplayProgressBar("NazarethPlusCity", "Reading buildings", 0.08f);
+                EditorUtility.DisplayProgressBar("NazarethPlusCity", "Reading terrain", 0.06f);
+                terrainField = BuildTerrain(report, settings, materials, projection, region, groundRoot, existing, used);
+                TerrainGround.Field = terrainField;
+                EditorUtility.DisplayProgressBar("NazarethPlusCity", "Reading buildings", 0.16f);
                 var buildings = GeoJsonFile.ReadFeatures(buildingPath, out string buildingError);
                 if (!string.IsNullOrEmpty(buildingError))
                     throw new InvalidDataException(buildingError);
                 report.SourceBuildings = buildings.Count;
-                BuildBuildings(report, settings, materials, library, projection, region, buildingsRoot, buildings, existing, used, names);
-                EditorUtility.DisplayProgressBar("NazarethPlusCity", "Reading streets", 0.7f);
+                BuildBuildings(report, settings, materials, library, foundations, terrainField, projection, region, buildingsRoot, buildings, existing, used, names);
+                EditorUtility.DisplayProgressBar("NazarethPlusCity", "Reading streets", 0.72f);
                 var streets = GeoJsonFile.ReadFeatures(streetPath, out string streetError);
                 if (!string.IsNullOrEmpty(streetError))
                     throw new InvalidDataException(streetError);
                 report.SourceStreets = streets.Count;
-                BuildStreets(report, settings, materials, library, projection, region, boundaryPaths, streetsRoot, streets, existing, used, names);
+                BuildStreets(report, settings, materials, library, terrainField, projection, region, boundaryPaths, streetsRoot, streets, existing, used, names);
+                FinishBoundaryWalls(report, settings, materials, library, terrainField);
             }
             finally
             {
@@ -175,6 +187,7 @@ namespace NazarethPlusCity.EditorTools
             DestroyStale(existing, used);
             AssetDatabase.SaveAssets();
             Physics.SyncTransforms();
+            WritePlacementFingerprint();
             var regionNow = UnityEngine.Object.FindAnyObjectByType<CityBoundaryMap>().Region;
             Vector3 spawn = Vector3.zero;
             float yaw = 0f;
@@ -215,15 +228,6 @@ namespace NazarethPlusCity.EditorTools
 
             var ground = Take(existing, used, "ground", "CityGround", groundRoot);
             ResetMeshes(ground);
-            var groundMesh = library.Create("CityGround");
-            if (!CityGeometry.FillGround(groundMesh, outers[0], holes, settings.groundUvMeters, out string groundError))
-                throw new InvalidDataException("Ground triangulation failed and a rectangular substitute was not used. " + groundError);
-            var groundFilter = ground.AddComponent<MeshFilter>();
-            groundFilter.sharedMesh = groundMesh;
-            var groundRenderer = ground.AddComponent<MeshRenderer>();
-            CityGeometry.ConfigureRenderer(groundRenderer, materials.Ground, null);
-            CityGeometry.AssignCollider(ground, groundMesh);
-            MarkStatic(ground);
             ground.transform.position = Vector3.zero;
 
             bool showOutline = settings.showBoundaryOutline;
@@ -232,31 +236,10 @@ namespace NazarethPlusCity.EditorTools
             if (previousOutline != null)
                 showOutline = previousOutline.visible;
             ResetMeshes(boundary);
-            var wallMesh = library.Create("CityBoundaryWalls");
-            CityGeometry.FillBorderWalls(wallMesh, region, settings.boundaryWallHeightMeters, settings.boundaryWallThicknessMeters, settings.boundaryCornerExtensionMeters, settings.boundaryWallEmbedMeters);
-            CityGeometry.AssignCollider(boundary, wallMesh);
             var map = boundary.GetComponent<CityBoundaryMap>() ?? boundary.AddComponent<CityBoundaryMap>();
             map.SetLoops(loops, settings.containmentSafetyMargin, settings.playerRadius);
             var outline = boundary.GetComponent<BoundaryOutline>() ?? boundary.AddComponent<BoundaryOutline>();
             outline.visible = showOutline;
-            for (int i = 0; i < loops.Count; i++)
-            {
-                var lineObject = new GameObject(loops[i].hole ? "HoleOutline_" + i : "Outline_" + i);
-                lineObject.transform.SetParent(boundary.transform, false);
-                var line = lineObject.AddComponent<LineRenderer>();
-                line.loop = true;
-                line.useWorldSpace = true;
-                line.widthMultiplier = 0.4f;
-                line.positionCount = loops[i].points.Length;
-                line.sharedMaterial = materials.Outline;
-                line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                line.receiveShadows = false;
-                line.startColor = outline.color;
-                line.endColor = outline.color;
-                for (int p = 0; p < loops[i].points.Length; p++)
-                    line.SetPosition(p, new Vector3(loops[i].points[p].x, 0.22f, loops[i].points[p].y));
-                line.enabled = showOutline;
-            }
 
             var record = boundary.GetComponent<FeatureRecord>() ?? boundary.AddComponent<FeatureRecord>();
             record.featureId = feature != null ? feature.Id : "boundary";
@@ -265,11 +248,11 @@ namespace NazarethPlusCity.EditorTools
             record.displayName = feature != null ? DisplayName(feature) : "Nazareth";
             record.propertiesJson = feature != null ? feature.PropertiesJson : "{}";
             MarkStatic(boundary);
-            report.Add("Boundary", record.featureId, "Generated", "playable polygon with " + region.Outers.Count + " outer ring(s) and " + region.Holes.Count + " hole(s); outline " + (showOutline ? "visible" : "hidden") + "; blocking walls " + settings.boundaryWallHeightMeters.ToString("0.##") + " m");
-            report.Notes.Add("Ground and boundary use the real city polygon, including " + region.Holes.Count + " interior hole ring(s).");
+            report.Add("Boundary", record.featureId, "Generated", "playable polygon with " + region.Outers.Count + " outer ring(s) and " + region.Holes.Count + " hole(s); outline " + (showOutline ? "visible" : "hidden") + "; blocking walls follow terrain, height " + settings.boundaryWallHeightMeters.ToString("0.##") + " m");
+            report.Notes.Add("Boundary uses the real city polygon, including " + region.Holes.Count + " interior hole ring(s). The flat ground mesh is retired and terrain is the walking surface.");
         }
 
-        static void BuildBuildings(CityReport report, CityGenerationSettings settings, CityMaterials materials, MeshLibrary library, GeoProjection projection, PlayableRegion region, Transform parent, List<GeoFeature> features, Dictionary<string, GameObject> existing, HashSet<string> used, HashSet<string> names)
+        static void BuildBuildings(CityReport report, CityGenerationSettings settings, CityMaterials materials, MeshLibrary library, MeshLibrary foundations, TerrainHeightField terrain, GeoProjection projection, PlayableRegion region, Transform parent, List<GeoFeature> features, Dictionary<string, GameObject> existing, HashSet<string> used, HashSet<string> names)
         {
             for (int i = 0; i < features.Count; i++)
             {
@@ -315,15 +298,16 @@ namespace NazarethPlusCity.EditorTools
                 CityGeometry.ToLocal(parts, out Vector2 origin);
                 float meshHeight = heightOverride ? Mathf.Max(0.25f, heightValue) : decision.meters;
                 int variant = Mathf.Abs(CityLabels.StableHash(feature.Id)) % materials.Stone.Length;
-                var worldOrigin = new Vector3(origin.x, 0f, origin.y);
-                go.transform.SetPositionAndRotation(worldOrigin, Quaternion.identity);
+                go.transform.SetPositionAndRotation(new Vector3(origin.x, 0f, origin.y), Quaternion.identity);
                 go.transform.localScale = Vector3.one;
                 int written = 0;
+                float meshBase = 0f;
+                bool measuredBase = false;
                 for (int p = 0; p < parts.Count; p++)
                 {
                     var host = parts.Count == 1 ? go : Child(go.transform, "Part_" + p);
                     var mesh = library.Create(objectName + (parts.Count == 1 ? "" : "_Part_" + p));
-                    if (!CityGeometry.FillBuilding(mesh, parts[p], meshHeight, worldOrigin, settings.stoneUvMeters, settings.roofUvMeters, out string meshError))
+                    if (!CityGeometry.FillBuilding(mesh, parts[p], meshHeight, new Vector3(origin.x, 0f, origin.y), settings.stoneUvMeters, settings.roofUvMeters, out string meshError))
                     {
                         note = string.IsNullOrEmpty(note) ? meshError : note + "; " + meshError;
                         continue;
@@ -335,8 +319,16 @@ namespace NazarethPlusCity.EditorTools
                     CityGeometry.ConfigureRenderer(renderer, materials.Stone[variant], materials.Roof);
                     CityGeometry.AssignCollider(host, mesh);
                     MarkStatic(host);
+                    if (!measuredBase || mesh.bounds.min.y < meshBase)
+                    {
+                        meshBase = mesh.bounds.min.y;
+                        measuredBase = true;
+                    }
+
                     written++;
                 }
+
+                string placement = PlaceOnTerrain(report, settings, materials, foundations, terrain, go, objectName, feature.Id, parts, origin, measuredBase ? meshBase : 0f, out float levelBase, out float meshBaseLocal, out float foundationDepth, out bool tallFoundation);
 
                 var record = go.GetComponent<FeatureRecord>() ?? go.AddComponent<FeatureRecord>();
                 record.featureId = feature.Id;
@@ -361,11 +353,16 @@ namespace NazarethPlusCity.EditorTools
                 building.wallMaterial = materials.Stone[variant];
                 building.roofMaterial = materials.Roof;
                 building.uvMeters = settings.stoneUvMeters;
+                building.levelBaseY = levelBase;
+                building.meshBaseLocalY = meshBaseLocal;
+                building.foundationDepthMeters = foundationDepth;
+                building.tallFoundation = tallFoundation;
+                building.terrainNote = placement;
                 if (tintOverride)
                     building.ApplyTintOverride();
                 MarkStatic(go);
                 report.GeneratedBuildings++;
-                string reason = decision.detail + "; mesh height " + meshHeight.ToString("0.##") + " m; parts " + written + "; " + RelationText(relation);
+                string reason = decision.detail + "; mesh height " + meshHeight.ToString("0.##") + " m; level base Y " + levelBase.ToString("0.00") + "; " + placement + "; parts " + written + "; " + RelationText(relation);
                 if (!string.IsNullOrEmpty(note))
                     reason += "; " + note;
                 reason += Extras(feature);
@@ -376,7 +373,7 @@ namespace NazarethPlusCity.EditorTools
             }
         }
 
-        static void BuildStreets(CityReport report, CityGenerationSettings settings, CityMaterials materials, MeshLibrary library, GeoProjection projection, PlayableRegion region, PathsD boundaryPaths, Transform parent, List<GeoFeature> features, Dictionary<string, GameObject> existing, HashSet<string> used, HashSet<string> names)
+        static void BuildStreets(CityReport report, CityGenerationSettings settings, CityMaterials materials, MeshLibrary library, TerrainHeightField terrain, GeoProjection projection, PlayableRegion region, PathsD boundaryPaths, Transform parent, List<GeoFeature> features, Dictionary<string, GameObject> existing, HashSet<string> used, HashSet<string> names)
         {
             for (int i = 0; i < features.Count; i++)
             {
@@ -441,6 +438,19 @@ namespace NazarethPlusCity.EditorTools
                 go.transform.localScale = Vector3.one;
                 float width = widthOverride ? Mathf.Max(0.4f, widthValue) : resolved;
                 float lift = settings.roadSurfaceOffset + (Mathf.Abs(CityLabels.StableHash(feature.Id)) % Mathf.Max(1, settings.roadOverlapLiftSteps)) * settings.roadOverlapLiftStep;
+                float lastGround = terrain != null ? terrain.MinY : 0f;
+                int roadGaps = 0;
+                float RoadGround(Vector2 world)
+                {
+                    if (terrain != null && (terrain.Sample(world.x, world.y, out float y) || terrain.SampleNearest(world.x, world.y, settings.terrainEdgeSearchMeters, out y)))
+                    {
+                        lastGround = y;
+                        return y;
+                    }
+
+                    roadGaps++;
+                    return lastGround;
+                }
                 var surfaces = new List<List<Vector2>>();
                 string clipNote = null;
                 for (int p = 0; p < worldParts.Count; p++)
@@ -456,7 +466,7 @@ namespace NazarethPlusCity.EditorTools
                 {
                     var host = surfaces.Count == 1 ? go : Child(go.transform, "Part_" + s);
                     var mesh = library.Create(objectName + (surfaces.Count == 1 ? "" : "_Part_" + s));
-                    if (!CityGeometry.FillRoad(mesh, surfaces[s], worldOrigin, lift, settings.asphaltUvMeters, out _))
+                    if (!CityGeometry.FillRoad(mesh, surfaces[s], worldOrigin, lift, settings.asphaltUvMeters, RoadGround, settings.surfaceDrapeSpacingMeters, out _))
                         continue;
                     var filter = host.AddComponent<MeshFilter>();
                     filter.sharedMesh = mesh;
@@ -497,7 +507,9 @@ namespace NazarethPlusCity.EditorTools
                 report.GeneratedStreets++;
                 if (written == 0)
                     report.StreetsFullyClipped++;
-                string reason = widthDetail + "; width " + width.ToString("0.##") + " m; surface Y " + lift.ToString("0.###") + "; components " + written + "; " + RelationText(relation);
+                string reason = widthDetail + "; width " + width.ToString("0.##") + " m; terrain offset " + lift.ToString("0.###") + " m; components " + written + "; " + RelationText(relation);
+                if (roadGaps > 0)
+                    reason += "; " + roadGaps + " vertices had no terrain sample";
                 if (!string.IsNullOrEmpty(clipNote))
                     reason += "; " + clipNote;
                 reason += Extras(feature);
@@ -587,6 +599,7 @@ namespace NazarethPlusCity.EditorTools
             walker.capsuleRadius = settings.playerRadius;
             walker.safetyMargin = settings.containmentSafetyMargin;
             walker.fallResetY = settings.fallResetY;
+            walker.fallDropMeters = Mathf.Max(1f, settings.fallDropMeters);
             walker.spawnPosition = spawn;
             walker.spawnYaw = yaw;
 
@@ -636,6 +649,11 @@ namespace NazarethPlusCity.EditorTools
 
             if (walker.actions == null)
                 throw new FileNotFoundException("NazarethPlusCity input actions did not import.");
+            if (ExplorationModeSetup.PackageImported)
+                ExplorationModeSetup.InstallNow(false);
+            else
+                Debug.LogWarning("Exploration modes were left unwired because the sci-fi trooper package is not imported yet.");
+            AssetPlacementSetup.EnsurePlayerWiring(walker);
             if (!spawned)
                 Debug.LogWarning("No fully clear street spawn was found. The walker was still placed at the best tested point.");
         }
@@ -675,7 +693,7 @@ namespace NazarethPlusCity.EditorTools
             pauseText.fontSize = 32;
             pauseText.alignment = TextAnchor.MiddleCenter;
             pauseText.color = Color.white;
-            pauseText.text = "Paused\nEsc resume\nR return to the street spawn";
+            pauseText.text = "Paused";
 
             var hint = new GameObject("Hint");
             hint.transform.SetParent(canvasObject.transform, false);
@@ -690,8 +708,10 @@ namespace NazarethPlusCity.EditorTools
             hintText.fontSize = 20;
             hintText.alignment = TextAnchor.MiddleCenter;
             hintText.color = new Color(1f, 0.98f, 0.94f, 0.92f);
-            hintText.text = "WASD walk    Mouse look    Shift sprint    Space jump    Esc pause    R return to street";
+            hintText.text = "WASD walk    Mouse look    Shift sprint    Space jump    B add asset    Esc menu    R return to street";
+            hintText.raycastTarget = false;
             hint.AddComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.75f);
+            PlacementHudBuilder.Ensure(canvasObject.transform, false);
             return canvasObject.transform;
         }
 
@@ -802,21 +822,51 @@ namespace NazarethPlusCity.EditorTools
                 return false;
             if (region.DistanceToBoundary(point) < settings.playerRadius + settings.containmentSafetyMargin + 0.8f)
                 return false;
-            var origin = new Vector3(point.x, 4f, point.y);
-            if (!Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 8f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
-                return false;
-            if (hit.point.y > 0.45f || hit.point.y < -0.2f || hit.normal.y < 0.45f)
+            if (!TryWalkHit(point, 0.66f, out RaycastHit hit))
                 return false;
             Vector3 chest = new Vector3(point.x, hit.point.y + 1.15f, point.y);
             var overlaps = Physics.OverlapSphere(chest, settings.playerRadius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
             for (int i = 0; i < overlaps.Length; i++)
             {
+                if (TerrainGround.IsWalkSurface(overlaps[i]))
+                    continue;
                 if (overlaps[i].bounds.max.y > hit.point.y + 0.5f)
                     return false;
             }
 
-            groundY = hit.point.y;
+            groundY = hit.point.y + Mathf.Max(0.02f, settings.spawnClearanceMeters);
             return true;
+        }
+
+        static bool TryWalkHit(Vector2 point, float minimumNormalY, out RaycastHit chosen)
+        {
+            chosen = default;
+            var terrain = CityTerrain.Active != null ? CityTerrain.Active : UnityEngine.Object.FindAnyObjectByType<CityTerrain>();
+            float top = terrain != null ? terrain.maxWorldY + 40f : 800f;
+            float bottom = terrain != null ? terrain.minWorldY - 40f : -80f;
+            var hits = Physics.RaycastAll(new Vector3(point.x, top, point.y), Vector3.down, Mathf.Max(1f, top - bottom), Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            int bestRank = 0;
+            float bestY = float.NegativeInfinity;
+            bool found = false;
+            for (int i = 0; i < hits.Length; i++)
+            {
+                if (hits[i].normal.y < minimumNormalY)
+                    continue;
+                int rank = hits[i].collider != null && hits[i].collider.GetComponentInParent<StreetFeature>() != null ? 3
+                    : hits[i].collider != null && hits[i].collider.GetComponentInParent<TerrainChunk>() != null ? 2
+                    : 0;
+                if (rank <= 0)
+                    continue;
+                if (rank > bestRank || (rank == bestRank && hits[i].point.y > bestY))
+                {
+                    bestRank = rank;
+                    bestY = hits[i].point.y;
+                    chosen = hits[i];
+                    found = true;
+                }
+            }
+
+            return found;
         }
 
         static float SpawnDistance(StreetFeature street, Vector2 center)
@@ -859,7 +909,7 @@ namespace NazarethPlusCity.EditorTools
             var serialized = new SerializedObject(controller);
             SetFloat(serialized, "m_Height", settings.playerHeight);
             SetFloat(serialized, "m_Radius", settings.playerRadius);
-            SetFloat(serialized, "m_SlopeLimit", 50f);
+            SetFloat(serialized, "m_SlopeLimit", 58f);
             SetFloat(serialized, "m_StepOffset", 0.35f);
             SetFloat(serialized, "m_SkinWidth", 0.04f);
             SetFloat(serialized, "m_MinMoveDistance", 0.001f);
@@ -958,13 +1008,14 @@ namespace NazarethPlusCity.EditorTools
                 walker.RememberSafeHere();
                 Vector3 safe = walker.transform.position;
                 controller.enabled = false;
-                walker.transform.position = new Vector3(safe.x, settings.fallResetY - 3f, safe.z);
+                float dropped = safe.y - settings.fallDropMeters - 4f;
+                walker.transform.position = new Vector3(safe.x, dropped, safe.z);
                 Physics.SyncTransforms();
                 controller.enabled = true;
                 Vector3 afterFall = walker.ApplyContainment();
-                bool fallRecovered = Vector3.Distance(new Vector3(afterFall.x, 0f, afterFall.z), new Vector3(safe.x, 0f, safe.z)) < 1.5f && afterFall.y > settings.fallResetY;
+                bool fallRecovered = Vector3.Distance(new Vector3(afterFall.x, 0f, afterFall.z), new Vector3(safe.x, 0f, safe.z)) < 1.5f && Mathf.Abs(afterFall.y - safe.y) < 1.5f;
                 report.Notes.Add(fallRecovered
-                    ? "Fall recovery returned the walker from Y " + (settings.fallResetY - 3f).ToString("0.0") + " to " + afterFall.ToString("0.0") + "."
+                    ? "Fall recovery returned the walker from Y " + dropped.ToString("0.0") + " to " + afterFall.ToString("0.0") + "."
                     : "Fall recovery left the walker at " + afterFall.ToString("0.0") + ".");
                 if (!fallRecovered)
                     report.ValidationFailures.Add("Falling below the map did not recover to the last safe position.");
@@ -975,7 +1026,7 @@ namespace NazarethPlusCity.EditorTools
                     walker.RememberSafeHere();
                     safe = walker.transform.position;
                     controller.enabled = false;
-                    walker.transform.position = new Vector3(outside.x, 0.2f, outside.y);
+                    walker.transform.position = new Vector3(outside.x, safe.y, outside.y);
                     controller.enabled = true;
                     Vector3 afterOutside = walker.ApplyContainment();
                     bool outsideRecovered = Vector3.Distance(new Vector3(afterOutside.x, 0f, afterOutside.z), new Vector3(safe.x, 0f, safe.z)) < 1.5f && map.Contains(new Vector2(afterOutside.x, afterOutside.z));
@@ -1019,8 +1070,8 @@ namespace NazarethPlusCity.EditorTools
             }
 
             bool sweeps = standing > 0.05f && standing < 4f && jumping > 0.05f && jumping < 4.5f && Mathf.Abs(standing - jumping) < 0.75f;
-            string motion = DriveController(settings, walker, controller, map, inside, outward, false);
-            string jumpMotion = DriveController(settings, walker, controller, map, inside, outward, true);
+            string motion = DriveController(settings, walker, controller, map, inside, outward, standing, false);
+            string jumpMotion = DriveController(settings, walker, controller, map, inside, outward, jumping, true);
             report.Notes.Add(label + ": " + detail + "; standing sweep " + standing.ToString("0.00") + " m; jump-height sweep " + jumping.ToString("0.00") + " m; sprint " + motion + "; jump " + jumpMotion + ".");
             if (!sweeps)
                 report.ValidationFailures.Add(label + " capsule sweep did not stop on the border (standing " + standing.ToString("0.00") + " m, jump " + jumping.ToString("0.00") + " m).");
@@ -1028,7 +1079,7 @@ namespace NazarethPlusCity.EditorTools
                 report.ValidationFailures.Add(label + " let the walker leave the playable area.");
         }
 
-        static string DriveController(CityGenerationSettings settings, FirstPersonWalker walker, CharacterController controller, CityBoundaryMap map, Vector2 inside, Vector2 outward, bool jump)
+        static string DriveController(CityGenerationSettings settings, FirstPersonWalker walker, CharacterController controller, CityBoundaryMap map, Vector2 inside, Vector2 outward, float wallDistance, bool jump)
         {
             float feet = GroundY(inside);
             controller.enabled = false;
@@ -1055,7 +1106,8 @@ namespace NazarethPlusCity.EditorTools
             Vector3 end = walker.transform.position;
             float outwardMeters = Vector2.Dot(new Vector2(end.x - origin.x, end.z - origin.z), outward);
             bool insideMap = map.Contains(new Vector2(end.x, end.z));
-            string state = insideMap && outwardMeters < 2.4f ? "blocked" : "LEFT";
+            float stopLimit = Mathf.Max(0.2f, wallDistance) + 0.65f;
+            string state = insideMap && outwardMeters <= stopLimit ? "blocked" : "LEFT";
             if (traveled < 0.02f)
                 state = insideMap ? "unmoved" : "LEFT";
             return state + " outward " + outwardMeters.ToString("0.00") + " m travel " + traveled.ToString("0.00") + " m";
@@ -1214,8 +1266,8 @@ namespace NazarethPlusCity.EditorTools
 
         static float GroundY(Vector2 point)
         {
-            if (Physics.Raycast(new Vector3(point.x, 40f, point.y), Vector3.down, out RaycastHit hit, 80f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
-                return hit.point.y;
+            if (TerrainGround.TrySurface(point.x, point.y, out float y))
+                return y;
             return 0f;
         }
 
@@ -1224,6 +1276,8 @@ namespace NazarethPlusCity.EditorTools
             var hits = Physics.OverlapCapsule(new Vector3(point.x, feet + 0.4f, point.y), new Vector3(point.x, feet + 1.55f, point.y), 0.34f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
             for (int i = 0; i < hits.Length; i++)
             {
+                if (TerrainGround.IsWalkSurface(hits[i]))
+                    continue;
                 if (hits[i] == border || hits[i].transform.IsChildOf(border.transform))
                     return false;
                 if (hits[i].bounds.max.y < feet + 0.55f)
@@ -1285,9 +1339,26 @@ namespace NazarethPlusCity.EditorTools
             if (!report.NorthIsPositiveZ || !report.EastIsPositiveX)
                 report.ValidationFailures.Add("Axis orientation failed: +Z must be north and +X must be east.");
             var ground = GameObject.Find("CityGround");
-            var groundMesh = ground != null ? ground.GetComponent<MeshFilter>()?.sharedMesh : null;
-            if (groundMesh == null || groundMesh.vertexCount < 20 || ground.GetComponent<MeshCollider>() == null)
-                report.ValidationFailures.Add("City ground mesh or collider is missing.");
+            var retiredCollider = ground != null ? ground.GetComponent<MeshCollider>() : null;
+            if (retiredCollider != null && retiredCollider.enabled)
+                report.ValidationFailures.Add("The flat city ground collider is still enabled.");
+            var terrain = UnityEngine.Object.FindAnyObjectByType<CityTerrain>();
+            int terrainColliders = 0;
+            if (terrain != null)
+            {
+                var chunks = terrain.GetComponentsInChildren<TerrainChunk>(true);
+                for (int i = 0; i < chunks.Length; i++)
+                {
+                    var collider = chunks[i].GetComponent<MeshCollider>();
+                    if (collider != null && collider.enabled && collider.sharedMesh != null && collider.sharedMesh.vertexCount > 2)
+                        terrainColliders++;
+                }
+            }
+
+            if (terrain == null || terrainColliders == 0)
+                report.ValidationFailures.Add("Terrain chunks or their colliders are missing.");
+            if (terrain != null && !string.IsNullOrEmpty(terrain.coverageNote))
+                report.Notes.Add(terrain.coverageNote);
             var boundary = GameObject.Find("CityBoundary");
             var wall = boundary != null ? boundary.GetComponent<MeshCollider>()?.sharedMesh : null;
             if (wall == null || wall.vertexCount < 12)
@@ -1302,15 +1373,85 @@ namespace NazarethPlusCity.EditorTools
                 report.ValidationFailures.Add("Spawn is outside the saved city boundary.");
             int checkedHeights = 0;
             var buildingObjects = UnityEngine.Object.FindObjectsByType<BuildingFeature>(FindObjectsSortMode.None);
-            for (int i = 0; i < buildingObjects.Length && checkedHeights < 12; i++)
+            var seenIds = new HashSet<string>();
+            int buried = 0;
+            BuildingFeature lowest = null;
+            BuildingFeature highest = null;
+            BuildingFeature deepest = null;
+            BuildingFeature multi = null;
+            BuildingFeature courtyard = null;
+            var field = TerrainGround.Field;
+            for (int i = 0; i < buildingObjects.Length; i++)
             {
-                var mesh = buildingObjects[i].GetComponentInChildren<MeshFilter>()?.sharedMesh;
-                if (mesh == null)
+                var building = buildingObjects[i];
+                var record = building.GetComponent<FeatureRecord>();
+                string id = record != null ? record.featureId : building.name;
+                if (!seenIds.Add(id))
+                    report.ValidationFailures.Add("Duplicate building id " + id + ".");
+                if (lowest == null || building.levelBaseY < lowest.levelBaseY)
+                    lowest = building;
+                if (highest == null || building.levelBaseY > highest.levelBaseY)
+                    highest = building;
+                if (deepest == null || building.foundationDepthMeters > deepest.foundationDepthMeters)
+                    deepest = building;
+                if (multi == null && building.parts != null && building.parts.Count > 1)
+                    multi = building;
+                if (courtyard == null && building.parts != null)
+                {
+                    for (int p = 0; p < building.parts.Count; p++)
+                    {
+                        if (building.parts[p].rings != null && building.parts[p].rings.Count > 1)
+                            courtyard = building;
+                    }
+                }
+
+                if (checkedHeights < 12)
+                {
+                    Mesh mesh = null;
+                    var filters = building.GetComponentsInChildren<MeshFilter>(true);
+                    for (int f = 0; f < filters.Length; f++)
+                    {
+                        if (filters[f].GetComponent<BuildingFoundation>() != null)
+                            continue;
+                        mesh = filters[f].sharedMesh;
+                        break;
+                    }
+
+                    if (mesh != null)
+                    {
+                        if (Mathf.Abs(mesh.bounds.max.y - building.appliedHeightMeters) > 0.2f)
+                            report.ValidationFailures.Add(building.name + " roof Y " + mesh.bounds.max.y.ToString("0.00") + " != height " + building.appliedHeightMeters.ToString("0.00"));
+                        checkedHeights++;
+                    }
+                }
+
+                if (field == null || building.parts == null)
                     continue;
-                if (Mathf.Abs(mesh.bounds.max.y - buildingObjects[i].appliedHeightMeters) > 0.2f)
-                    report.ValidationFailures.Add(buildingObjects[i].name + " roof Y " + mesh.bounds.max.y.ToString("0.00") + " != height " + buildingObjects[i].appliedHeightMeters.ToString("0.00"));
-                checkedHeights++;
+                var origin = new Vector2(building.transform.position.x, building.transform.position.z);
+                if (!field.TryMaxUnderFootprint(building.parts, origin, out float maxGround, out _))
+                    continue;
+                float worldBottom = building.transform.position.y + building.meshBaseLocalY;
+                if (maxGround > worldBottom - settings.buildingClearanceMeters + 0.03f)
+                {
+                    buried++;
+                    if (buried <= 12)
+                        report.ValidationFailures.Add("Terrain intersects " + id + ". Highest ground " + maxGround.ToString("0.00") + " is above level base " + worldBottom.ToString("0.00") + ".");
+                }
             }
+
+            if (buried > 12)
+                report.ValidationFailures.Add(buried + " buildings are intersected by terrain.");
+            NotePlacement(report, "Lowest base", lowest);
+            NotePlacement(report, "Highest base", highest);
+            NotePlacement(report, "Deepest foundation", deepest);
+            NotePlacement(report, "MultiPolygon", multi);
+            NotePlacement(report, "Courtyard", courtyard);
+            if (field != null && field.CityArea > 1f && field.UnsupportedArea > field.CityArea * 0.08f)
+                report.ValidationFailures.Add("Unsupported terrain covers " + (100f * field.UnsupportedArea / field.CityArea).ToString("0.0") + "% of the city.");
+            if (field != null && field.SampleCount > 0 && !field.SampleCountMatches)
+                report.ValidationFailures.Add("Parsed terrain samples " + field.SampleCount + " do not match the file header " + field.DeclaredSampleCount + ".");
+            if (field != null && field.SampleCount > 0 && (!field.HighestCheck || !field.LowestCheck))
+                report.ValidationFailures.Add("Named highest or lowest terrain sample does not match the generated surface.");
 
             if (checkedHeights == 0)
                 report.ValidationFailures.Add("No building meshes were available to check height.");
@@ -1328,6 +1469,19 @@ namespace NazarethPlusCity.EditorTools
                 report.ValidationFailures.Add("NazarethPlusCity is not the enabled build scene.");
             report.Notes.Add(spawned ? "Spawn validation passed." : "Spawn validation did not find a clear point.");
             report.Notes.Add("Checked " + checkedHeights + " building roof heights against their resolved or override height.");
+        }
+
+        static void NotePlacement(CityReport report, string label, BuildingFeature building)
+        {
+            if (building == null)
+            {
+                report.Notes.Add(label + ": none found.");
+                return;
+            }
+
+            var record = building.GetComponent<FeatureRecord>();
+            string id = record != null ? record.featureId : building.name;
+            report.Notes.Add(label + " " + id + ": previous level base was the mesh bottom on the flat Y=0 plane (" + building.meshBaseLocalY.ToString("0.00") + " m). New level base Y " + building.levelBaseY.ToString("0.00") + ", building height " + building.appliedHeightMeters.ToString("0.00") + " m, foundation " + building.foundationDepthMeters.ToString("0.00") + " m. " + building.terrainNote);
         }
 
         static void ConfigurePipeline()
@@ -1398,13 +1552,15 @@ namespace NazarethPlusCity.EditorTools
             text.AppendLine("NazarethPlusCity import report");
             text.AppendLine("Engine: Unity 6000.1.7f1, Universal Render Pipeline, Windows desktop.");
             text.AppendLine(CityCoordinateFrame.AxisSummary);
-            text.AppendLine("GeoJSON is WGS84 with coordinates ordered longitude, latitude. Source altitude is ignored.");
+            text.AppendLine("GeoJSON is WGS84 with coordinates ordered longitude, latitude. Building extrusion height is separate from ground elevation.");
+            text.AppendLine("Terrain elevation uses localGroundY = (sourceElevation - elevationOrigin) * worldUnitsPerMetre.");
             text.AppendLine("Building models in Data/building_models are not used. Every building is a footprint extrusion.");
             text.AppendLine();
             text.AppendLine("Boundary features: " + report.SourceBoundary);
             text.AppendLine("Buildings: source " + report.SourceBuildings + ", generated " + report.GeneratedBuildings + ", skipped " + report.SkippedBuildings);
             text.AppendLine("  explicit height " + report.ExplicitHeight + ", floor count " + report.FloorHeight + ", fallback 3 floors / 9 m " + report.FallbackHeight);
             text.AppendLine("  inside " + report.BuildingsInside + ", outside " + report.BuildingsOutside + ", crossing " + report.BuildingsCross + ", in hole " + report.BuildingsHole);
+            text.AppendLine("Tall foundations: " + report.TallFoundations + ". Buildings without terrain under the footprint: " + report.UncoveredBuildings + ".");
             text.AppendLine("Streets: source " + report.SourceStreets + ", generated " + report.GeneratedStreets + ", skipped " + report.SkippedStreets + ", fully clipped " + report.StreetsFullyClipped);
             text.AppendLine("  inside " + report.StreetsInside + ", outside " + report.StreetsOutside + ", crossing " + report.StreetsCross + ", in hole " + report.StreetsHole);
             text.AppendLine();
@@ -1417,6 +1573,10 @@ namespace NazarethPlusCity.EditorTools
             AppendIds(text, report.CrossingIds);
             text.AppendLine("Features inside a boundary hole (retained, not moved):");
             AppendIds(text, report.HoleIds);
+            text.AppendLine("Tall foundations (kept, flagged for inspection):");
+            AppendIds(text, report.TallFoundationIds);
+            text.AppendLine("Buildings without terrain under the footprint:");
+            AppendIds(text, report.UncoveredBuildingIds);
             text.AppendLine("Skipped features:");
             if (report.Skipped.Count == 0)
                 text.AppendLine("(none)");
@@ -1509,7 +1669,7 @@ namespace NazarethPlusCity.EditorTools
             var bits = new List<string>();
             string minHeight = GeoJsonFile.Property(feature, "min_height");
             if (MeasureParser.TryParseLength(minHeight, out float meters, out _) && meters > 0.2f)
-                bits.Add("min_height ignored so the base stays on Y=0");
+                bits.Add("min_height ignored; the base follows terrain");
             string underground = GeoJsonFile.Property(feature, "underground");
             if (underground == "true" || underground == "yes")
                 bits.Add("underground tag ignored");
@@ -1605,12 +1765,24 @@ namespace NazarethPlusCity.EditorTools
                 UnityEngine.Object.DestroyImmediate(components[i]);
         }
 
+        public static bool IsProtectedFromRebuild(GameObject go)
+        {
+            if (go == null)
+                return false;
+            if (go.GetComponent<PlacedAssetsRoot>() != null)
+                return true;
+            return go.GetComponentInParent<PlacedAssetsRoot>() != null;
+        }
+
         static void DestroyStale(Dictionary<string, GameObject> existing, HashSet<string> used)
         {
             foreach (var pair in existing)
             {
-                if (!used.Contains(pair.Key) && pair.Value != null)
-                    UnityEngine.Object.DestroyImmediate(pair.Value);
+                if (pair.Value == null || used.Contains(pair.Key))
+                    continue;
+                if (IsProtectedFromRebuild(pair.Value))
+                    continue;
+                UnityEngine.Object.DestroyImmediate(pair.Value);
             }
         }
 
@@ -1627,6 +1799,455 @@ namespace NazarethPlusCity.EditorTools
             asset = ScriptableObject.CreateInstance<T>();
             AssetDatabase.CreateAsset(asset, path);
             return asset;
+        }
+
+        static void DeleteGeneratedFolder(string path)
+        {
+            if (AssetDatabase.IsValidFolder(path))
+                AssetDatabase.DeleteAsset(path);
+        }
+
+        static TerrainHeightField BuildTerrain(CityReport report, CityGenerationSettings settings, CityMaterials materials, GeoProjection projection, PlayableRegion region, Transform groundRoot, Dictionary<string, GameObject> existing, HashSet<string> used)
+        {
+            string path = Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Data", "terrain.json");
+            var field = TerrainHeightField.Build(path, projection, settings, region, (progress, message) =>
+            {
+                EditorUtility.DisplayProgressBar("NazarethPlusCity", message, 0.06f + progress * 0.1f);
+            });
+            TerrainGround.Field = field;
+            var terrainObject = Take(existing, used, "terrain", "Terrain", groundRoot);
+            ResetMeshes(terrainObject);
+            terrainObject.transform.position = Vector3.zero;
+            var info = terrainObject.GetComponent<CityTerrain>() ?? terrainObject.AddComponent<CityTerrain>();
+            info.elevationOriginMeters = settings.elevationOriginMeters;
+            info.worldUnitsPerMetre = settings.worldUnitsPerMetre > 0.0001f ? settings.worldUnitsPerMetre : 1f;
+            info.minWorldY = field.MinY;
+            info.maxWorldY = field.MaxY;
+            info.sampleCount = field.SampleCount;
+            info.triangleCount = field.TriangleCount;
+            info.coveredArea = field.CoveredArea;
+            info.unsupportedArea = field.UnsupportedArea;
+            info.edgeInterpolatedArea = field.EdgeInterpolatedArea;
+            info.edgeInterpolatedTriangles = field.EdgeInterpolatedTriangles;
+            info.measuredSpacing = field.MeasuredSpacing;
+            info.coverageNote = field.Summary;
+            var chunks = field.CreateChunks(512f, settings.groundUvMeters);
+            for (int i = 0; i < chunks.Count; i++)
+            {
+                var chunk = chunks[i];
+                var host = new GameObject("TerrainChunk_" + i.ToString("000"));
+                host.transform.SetParent(terrainObject.transform, false);
+                host.AddComponent<TerrainChunk>();
+                var mesh = new Mesh { name = host.name };
+                mesh.indexFormat = chunk.Vertices.Length > 65535 ? IndexFormat.UInt32 : IndexFormat.UInt16;
+                mesh.vertices = chunk.Vertices;
+                mesh.normals = chunk.Normals;
+                mesh.uv = chunk.Uvs;
+                mesh.triangles = chunk.Triangles;
+                mesh.RecalculateBounds();
+                try { mesh.RecalculateTangents(); }
+                catch (Exception) { }
+                AssetDatabase.CreateAsset(mesh, "Assets/NazarethPlusCity/Generated/Terrain/" + host.name + ".asset");
+                var filter = host.AddComponent<MeshFilter>();
+                filter.sharedMesh = mesh;
+                var renderer = host.AddComponent<MeshRenderer>();
+                CityGeometry.ConfigureRenderer(renderer, materials.Ground, null);
+                CityGeometry.AssignCollider(host, mesh);
+                MarkStatic(host);
+            }
+
+            info.chunkCount = chunks.Count;
+            MarkStatic(terrainObject);
+            report.Notes.Add(field.Summary);
+            report.Add("Terrain", "terrain.json", "Generated", field.TriangleCount + " triangles in " + chunks.Count + " chunks; unsupported " + field.UnsupportedArea.ToString("0") + " m2; edge interpolation " + field.EdgeInterpolatedArea.ToString("0") + " m2");
+            return field;
+        }
+
+        static void FinishBoundaryWalls(CityReport report, CityGenerationSettings settings, CityMaterials materials, MeshLibrary library, TerrainHeightField terrain)
+        {
+            var boundary = GameObject.Find("CityBoundary");
+            var map = boundary != null ? boundary.GetComponent<CityBoundaryMap>() : null;
+            if (boundary == null || map == null)
+                throw new InvalidOperationException("City boundary was not available for terrain-following walls.");
+            float Ground(Vector2 point)
+            {
+                if (terrain != null && (terrain.Sample(point.x, point.y, out float y) || terrain.SampleNearest(point.x, point.y, settings.terrainEdgeSearchMeters, out y)))
+                    return y;
+                return terrain != null ? terrain.MinY : 0f;
+            }
+
+            var wallMesh = library.Create("CityBoundaryWalls");
+            CityGeometry.FillBorderWalls(wallMesh, map.Region, settings.boundaryWallHeightMeters, settings.boundaryWallThicknessMeters, settings.boundaryCornerExtensionMeters, settings.boundaryWallEmbedMeters, Ground, settings.surfaceDrapeSpacingMeters);
+            CityGeometry.AssignCollider(boundary, wallMesh);
+            var outline = boundary.GetComponent<BoundaryOutline>();
+            bool visible = outline != null && outline.visible;
+            for (int i = 0; i < map.loops.Count; i++)
+            {
+                var loop = map.loops[i];
+                if (loop?.points == null || loop.points.Length < 2)
+                    continue;
+                var positions = new List<Vector3>();
+                float spacing = Mathf.Max(2f, settings.surfaceDrapeSpacingMeters);
+                for (int p = 0; p < loop.points.Length; p++)
+                {
+                    Vector2 a = loop.points[p];
+                    Vector2 b = loop.points[(p + 1) % loop.points.Length];
+                    float length = Vector2.Distance(a, b);
+                    int steps = Mathf.Max(1, Mathf.CeilToInt(length / spacing));
+                    for (int s = 0; s < steps; s++)
+                    {
+                        Vector2 point = Vector2.Lerp(a, b, s / (float)steps);
+                        positions.Add(new Vector3(point.x, Ground(point) + 0.22f, point.y));
+                    }
+                }
+
+                var lineObject = new GameObject(loop.hole ? "HoleOutline_" + i : "Outline_" + i);
+                lineObject.transform.SetParent(boundary.transform, false);
+                var line = lineObject.AddComponent<LineRenderer>();
+                line.loop = true;
+                line.useWorldSpace = true;
+                line.widthMultiplier = 0.4f;
+                line.positionCount = positions.Count;
+                line.sharedMaterial = materials.Outline;
+                line.shadowCastingMode = ShadowCastingMode.Off;
+                line.receiveShadows = false;
+                if (outline != null)
+                {
+                    line.startColor = outline.color;
+                    line.endColor = outline.color;
+                }
+
+                line.SetPositions(positions.ToArray());
+                line.enabled = visible;
+            }
+
+            report.Notes.Add("Boundary walls follow the terrain and keep the saved playable outline.");
+        }
+
+        static string PlaceOnTerrain(CityReport report, CityGenerationSettings settings, CityMaterials materials, MeshLibrary foundations, TerrainHeightField terrain, GameObject go, string objectName, string featureId, List<FootprintPart> parts, Vector2 origin, float measuredBase, out float levelBase, out float meshBaseLocal, out float foundationDepth, out bool tallFoundation)
+        {
+            meshBaseLocal = measuredBase;
+            float clearance = Mathf.Max(0f, settings.buildingClearanceMeters);
+            float maxGround = 0f;
+            bool covered = false;
+            bool partial = false;
+            if (terrain != null)
+                covered = terrain.TryMaxUnderFootprint(parts, origin, out maxGround, out partial);
+            string note;
+            if (!covered)
+            {
+                Vector2 probe = origin;
+                if (parts != null && parts.Count > 0 && parts[0].rings != null && parts[0].rings.Count > 0 && parts[0].rings[0].points.Count > 0)
+                    probe = origin + parts[0].rings[0].points[0];
+                if (terrain != null && terrain.SampleNearest(probe.x, probe.y, settings.terrainEdgeSearchMeters * 2f, out maxGround))
+                    note = "no terrain triangles under the occupied footprint; placed from the nearest surface";
+                else
+                {
+                    maxGround = 0f;
+                    note = "no terrain under the occupied footprint; base left on the elevation origin";
+                }
+
+                report.UncoveredBuildings++;
+                report.UncoveredBuildingIds.Add(string.IsNullOrEmpty(featureId) ? go.name : featureId);
+            }
+            else if (partial)
+            {
+                note = "part of the footprint has no terrain mesh; base uses the highest covered triangle";
+            }
+            else
+            {
+                note = "base is the highest terrain under the occupied footprint";
+            }
+
+            levelBase = maxGround + clearance;
+            go.transform.position = new Vector3(origin.x, levelBase - meshBaseLocal, origin.y);
+            foundationDepth = 0f;
+            tallFoundation = false;
+            if (terrain == null || foundations == null)
+                return note;
+            var scratch = new Mesh { name = objectName + "_FoundationScratch" };
+            bool built = terrain.FillFoundation(scratch, parts, origin, go.transform.position, levelBase, settings.foundationSegmentMeters, settings.foundationThicknessMeters, 0.08f, settings.terrainEdgeSearchMeters, clearance + 0.04f, out foundationDepth, out bool reached);
+            if (!built)
+            {
+                UnityEngine.Object.DestroyImmediate(scratch);
+                return note;
+            }
+
+            var mesh = foundations.Create(objectName + "_Foundation");
+            mesh.indexFormat = scratch.vertexCount > 65535 ? IndexFormat.UInt32 : IndexFormat.UInt16;
+            mesh.vertices = scratch.vertices;
+            mesh.normals = scratch.normals;
+            mesh.uv = scratch.uv;
+            if (scratch.tangents != null && scratch.tangents.Length == scratch.vertexCount)
+                mesh.tangents = scratch.tangents;
+            mesh.triangles = scratch.triangles;
+            mesh.RecalculateBounds();
+            UnityEngine.Object.DestroyImmediate(scratch);
+            var host = new GameObject("Foundation");
+            host.transform.SetParent(go.transform, false);
+            var filter = host.AddComponent<MeshFilter>();
+            filter.sharedMesh = mesh;
+            var renderer = host.AddComponent<MeshRenderer>();
+            CityGeometry.ConfigureRenderer(renderer, materials.Foundation, null);
+            CityGeometry.AssignCollider(host, mesh);
+            MarkStatic(host);
+            var marker = host.AddComponent<BuildingFoundation>();
+            marker.depthMeters = foundationDepth;
+            marker.tall = foundationDepth >= settings.tallFoundationMeters;
+            marker.reachedGround = reached;
+            tallFoundation = marker.tall;
+            if (!reached)
+                note += "; a foundation sample used a nearby terrain height";
+            if (!tallFoundation)
+                return note;
+            report.TallFoundations++;
+            report.TallFoundationIds.Add((string.IsNullOrEmpty(featureId) ? go.name : featureId) + " " + foundationDepth.ToString("0.0") + " m");
+            return note + "; tall foundation " + foundationDepth.ToString("0.0") + " m kept for inspection";
+        }
+
+        static void WritePlacementFingerprint()
+        {
+            var buildings = UnityEngine.Object.FindObjectsByType<BuildingFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var lines = new List<string>(buildings.Length);
+            for (int i = 0; i < buildings.Length; i++)
+            {
+                var record = buildings[i].GetComponent<FeatureRecord>();
+                string id = record != null ? record.featureId : buildings[i].name;
+                lines.Add(id + "\t" + buildings[i].levelBaseY.ToString("0.000", CultureInfo.InvariantCulture));
+            }
+
+            lines.Sort(StringComparer.Ordinal);
+            File.WriteAllText(Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Assets", "NazarethPlusCity", "Generated", "PlacementFingerprint.txt"), string.Join("\n", lines));
+        }
+
+        public static void RebuildTerrainOnly()
+        {
+            CityEditGuard.Suppress = true;
+            try
+            {
+                var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+                var settings = LoadOrCreate<CityGenerationSettings>("Assets/NazarethPlusCity/Settings/CityGenerationSettings.asset");
+                var frame = LoadOrCreate<CityCoordinateFrame>("Assets/NazarethPlusCity/Settings/CityCoordinateFrame.asset");
+                if (!frame.originSaved)
+                    throw new InvalidOperationException("Generate the city once so the geographic origin is saved.");
+                var materials = CityMaterialFactory.CreateOrUpdate();
+                string root = Directory.GetParent(Application.dataPath).FullName;
+                var boundaryFeatures = GeoJsonFile.ReadFeatures(Path.Combine(root, "Data", "city_boundary.geojson"), out string error);
+                if (!string.IsNullOrEmpty(error))
+                    throw new InvalidDataException(error);
+                var projection = GeoProjection.FromOrigin(frame.originLongitude, frame.originLatitude);
+                var outers = new List<List<Vector2>>();
+                var holes = new List<List<Vector2>>();
+                for (int i = 0; i < boundaryFeatures.Count; i++)
+                {
+                    var feature = boundaryFeatures[i];
+                    if (feature.Polygons == null)
+                        continue;
+                    for (int p = 0; p < feature.Polygons.Count; p++)
+                    {
+                        var rings = feature.Polygons[p].Rings;
+                        if (rings.Count == 0)
+                            continue;
+                        outers.Add(CityGeometry.ProjectRing(rings[0], projection));
+                        for (int h = 1; h < rings.Count; h++)
+                            holes.Add(CityGeometry.ProjectRing(rings[h], projection));
+                    }
+                }
+
+                var loops = new List<BoundaryLoop>();
+                for (int i = 0; i < outers.Count; i++)
+                    loops.Add(new BoundaryLoop { hole = false, points = outers[i].ToArray() });
+                for (int i = 0; i < holes.Count; i++)
+                    loops.Add(new BoundaryLoop { hole = true, points = holes[i].ToArray() });
+                var region = PlayableRegion.FromLoops(loops);
+                DeleteGeneratedFolder("Assets/NazarethPlusCity/Generated/Terrain");
+                CityMaterialFactory.EnsureFolder("Assets/NazarethPlusCity/Generated/Terrain");
+                var nazareth = GameObject.Find("Nazareth") ?? new GameObject("Nazareth");
+                var groundRoot = Folder(nazareth.transform, "Ground");
+                var existing = new Dictionary<string, GameObject>();
+                var owned = UnityEngine.Object.FindObjectsByType<GeneratorOwned>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                for (int i = 0; i < owned.Length; i++)
+                {
+                    if (owned[i] != null && !string.IsNullOrEmpty(owned[i].key) && !existing.ContainsKey(owned[i].key))
+                        existing.Add(owned[i].key, owned[i].gameObject);
+                }
+
+                var report = new CityReport();
+                AssetDatabase.StartAssetEditing();
+                try
+                {
+                    BuildTerrain(report, settings, materials, projection, region, groundRoot, existing, new HashSet<string>());
+                }
+                finally
+                {
+                    AssetDatabase.StopAssetEditing();
+                    EditorUtility.ClearProgressBar();
+                }
+
+                AssetDatabase.SaveAssets();
+                EditorSceneManager.SaveScene(scene);
+                Debug.Log(report.Notes.Count > 0 ? report.Notes[0] : "Terrain rebuilt.");
+            }
+            finally
+            {
+                CityEditGuard.Suppress = false;
+                EditorUtility.ClearProgressBar();
+            }
+        }
+
+        public static void RepositionBuildingsAndFoundations()
+        {
+            CityEditGuard.Suppress = true;
+            try
+            {
+                var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+                var settings = LoadOrCreate<CityGenerationSettings>("Assets/NazarethPlusCity/Settings/CityGenerationSettings.asset");
+                var materials = CityMaterialFactory.CreateOrUpdate();
+                var terrainObject = UnityEngine.Object.FindAnyObjectByType<CityTerrain>();
+                if (terrainObject == null)
+                    throw new InvalidOperationException("Generate terrain before repositioning buildings.");
+                var filters = terrainObject.GetComponentsInChildren<MeshFilter>(true);
+                var field = TerrainHeightField.FromMeshes(filters);
+                fieldMinMax(terrainObject, field);
+                TerrainGround.Field = field;
+                DeleteGeneratedFolder("Assets/NazarethPlusCity/Generated/Foundations");
+                CityMaterialFactory.EnsureFolder("Assets/NazarethPlusCity/Generated/Foundations");
+                var foundations = new MeshLibrary("Assets/NazarethPlusCity/Generated/Foundations");
+                var report = new CityReport();
+                var buildings = UnityEngine.Object.FindObjectsByType<BuildingFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                AssetDatabase.StartAssetEditing();
+                try
+                {
+                    for (int i = 0; i < buildings.Length; i++)
+                    {
+                        var building = buildings[i];
+                        if (building.parts == null || building.parts.Count == 0)
+                            continue;
+                        var existingFoundation = building.transform.Find("Foundation");
+                        if (existingFoundation != null)
+                            UnityEngine.Object.DestroyImmediate(existingFoundation.gameObject);
+                        float meshBase = building.meshBaseLocalY;
+                        var meshFilters = building.GetComponentsInChildren<MeshFilter>(true);
+                        bool measured = false;
+                        for (int f = 0; f < meshFilters.Length; f++)
+                        {
+                            if (meshFilters[f].GetComponent<BuildingFoundation>() != null || meshFilters[f].sharedMesh == null)
+                                continue;
+                            if (!measured || meshFilters[f].sharedMesh.bounds.min.y < meshBase)
+                            {
+                                meshBase = meshFilters[f].sharedMesh.bounds.min.y;
+                                measured = true;
+                            }
+                        }
+
+                        var origin = new Vector2(building.transform.position.x, building.transform.position.z);
+                        var record = building.GetComponent<FeatureRecord>();
+                        string note = PlaceOnTerrain(report, settings, materials, foundations, field, building.gameObject, building.name, record != null ? record.featureId : building.name, building.parts, origin, meshBase, out float levelBase, out float meshBaseLocal, out float depth, out bool tall);
+                        building.levelBaseY = levelBase;
+                        building.meshBaseLocalY = meshBaseLocal;
+                        building.foundationDepthMeters = depth;
+                        building.tallFoundation = tall;
+                        building.terrainNote = note;
+                        EditorUtility.SetDirty(building);
+                    }
+                }
+                finally
+                {
+                    AssetDatabase.StopAssetEditing();
+                }
+
+                WritePlacementFingerprint();
+                AssetDatabase.SaveAssets();
+                EditorSceneManager.MarkSceneDirty(scene);
+                EditorSceneManager.SaveScene(scene);
+                Debug.Log("Repositioned " + buildings.Length + " buildings. Tall foundations " + report.TallFoundations + ". Uncovered " + report.UncoveredBuildings + ".");
+            }
+            finally
+            {
+                CityEditGuard.Suppress = false;
+            }
+        }
+
+        static void fieldMinMax(CityTerrain terrain, TerrainHeightField field)
+        {
+            terrain.minWorldY = field.MinY;
+            terrain.maxWorldY = field.MaxY;
+            terrain.triangleCount = field.TriangleCount;
+            EditorUtility.SetDirty(terrain);
+        }
+
+        public static void ValidateTerrainAlignment()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            var settings = LoadOrCreate<CityGenerationSettings>("Assets/NazarethPlusCity/Settings/CityGenerationSettings.asset");
+            var terrainObject = UnityEngine.Object.FindAnyObjectByType<CityTerrain>();
+            var report = new CityReport();
+            if (terrainObject == null)
+            {
+                Debug.LogError("Terrain alignment failed: no terrain in the scene.");
+                return;
+            }
+
+            TerrainGround.Field = TerrainHeightField.FromMeshes(terrainObject.GetComponentsInChildren<MeshFilter>(true));
+            int buildings = UnityEngine.Object.FindObjectsByType<BuildingFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
+            int streets = UnityEngine.Object.FindObjectsByType<StreetFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
+            report.GeneratedBuildings = buildings;
+            report.SourceBuildings = buildings;
+            report.GeneratedStreets = streets;
+            report.SourceStreets = streets;
+            report.ScaleRatio = 1;
+            report.NorthIsPositiveZ = true;
+            report.EastIsPositiveX = true;
+            var walker = UnityEngine.Object.FindAnyObjectByType<FirstPersonWalker>();
+            Vector3 spawn = walker != null ? walker.spawnPosition : Vector3.zero;
+            Validate(report, settings, walker != null, spawn);
+            int roadChecks = 0;
+            int roadMisses = 0;
+            var streetObjects = UnityEngine.Object.FindObjectsByType<StreetFeature>(FindObjectsSortMode.None);
+            for (int i = 0; i < streetObjects.Length && roadChecks < 40; i++)
+            {
+                var filters = streetObjects[i].GetComponentsInChildren<MeshFilter>(true);
+                for (int f = 0; f < filters.Length; f++)
+                {
+                    var mesh = filters[f].sharedMesh;
+                    if (mesh == null)
+                        continue;
+                    var vertices = mesh.vertices;
+                    var transform = filters[f].transform;
+                    int step = Mathf.Max(1, vertices.Length / 8);
+                    for (int v = 0; v < vertices.Length; v += step)
+                    {
+                        Vector3 world = transform.TransformPoint(vertices[v]);
+                        if (!TerrainGround.Field.Sample(world.x, world.z, out float ground) && !TerrainGround.Field.SampleNearest(world.x, world.z, settings.terrainEdgeSearchMeters, out ground))
+                        {
+                            roadMisses++;
+                            continue;
+                        }
+
+                        roadChecks++;
+                        if (world.y + 0.2f < ground)
+                            report.ValidationFailures.Add(streetObjects[i].name + " dips into terrain at " + world.ToString("0.0") + ".");
+                    }
+                }
+            }
+
+            report.Notes.Add("Road drape samples " + roadChecks + ", unresolved " + roadMisses + ".");
+            var text = new StringBuilder();
+            text.AppendLine("Terrain alignment");
+            text.AppendLine("Buildings " + buildings + ", streets " + streets + ".");
+            foreach (string note in report.Notes)
+                text.AppendLine(note);
+            if (report.ValidationFailures.Count == 0)
+                text.AppendLine("Alignment checks passed.");
+            else
+                foreach (string failure in report.ValidationFailures)
+                    text.AppendLine("FAILED: " + failure);
+            File.WriteAllText(Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Assets", "NazarethPlusCity", "Generated", "TerrainValidation.txt"), text.ToString());
+            AssetDatabase.ImportAsset("Assets/NazarethPlusCity/Generated/TerrainValidation.txt");
+            Debug.Log(text.ToString());
+            EditorSceneManager.SaveScene(scene);
+            if (report.ValidationFailures.Count > 0)
+                throw new InvalidOperationException(string.Join(Environment.NewLine, report.ValidationFailures));
         }
 
         sealed class MeshLibrary
@@ -1673,6 +2294,10 @@ namespace NazarethPlusCity.EditorTools
             public readonly List<string> OutsideIds = new List<string>();
             public readonly List<string> CrossingIds = new List<string>();
             public readonly List<string> HoleIds = new List<string>();
+            public int TallFoundations;
+            public int UncoveredBuildings;
+            public readonly List<string> TallFoundationIds = new List<string>();
+            public readonly List<string> UncoveredBuildingIds = new List<string>();
             public readonly List<string> ValidationFailures = new List<string>();
 
             public void Add(string kind, string id, string status, string reason)

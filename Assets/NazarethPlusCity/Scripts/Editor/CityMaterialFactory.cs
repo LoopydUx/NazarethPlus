@@ -11,6 +11,7 @@ namespace NazarethPlusCity.EditorTools
         public Material Roof;
         public Material Asphalt;
         public Material Ground;
+        public Material Foundation;
         public Material Outline;
         public Material Skybox;
     }
@@ -57,6 +58,7 @@ namespace NazarethPlusCity.EditorTools
             materials.Roof = Lit("M_ConcreteRoof", shader, roofAlbedo, roofNormal, Color.white, 0.22f, 0.25f);
             materials.Asphalt = Lit("M_Asphalt", shader, asphaltAlbedo, asphaltNormal, Color.white, 0.07f, 0.45f);
             materials.Ground = Lit("M_Earth", shader, groundAlbedo, groundNormal, Color.white, 0.1f, 0.3f);
+            materials.Foundation = Lit("M_Foundation", shader, stoneAlbedo, stoneNormal, new Color(0.72f, 0.70f, 0.66f), 0.12f, 0.45f);
 
             var unlit = Shader.Find("Universal Render Pipeline/Unlit");
             var outline = new Material(unlit != null ? unlit : shader) { name = "M_BoundaryOutline" };

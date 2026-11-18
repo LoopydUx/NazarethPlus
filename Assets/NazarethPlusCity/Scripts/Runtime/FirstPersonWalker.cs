@@ -1,10 +1,29 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 namespace NazarethPlusCity
 {
+    public enum WalkerDrive
+    {
+        FirstPerson = 0,
+        ThirdPerson = 1,
+        Parked = 2
+    }
+
+    public struct CityControlFrame
+    {
+        public Vector2 move;
+        public Vector2 look;
+        public bool jumpPressed;
+        public bool sprint;
+        public bool ascend;
+        public bool descend;
+        public float scroll;
+    }
+
     /// <summary>
-    /// Desktop first-person walk. Actions live on NazarethPlusCity.inputactions.
+    /// Shared grounded walker for first and third person. One CharacterController owns collision.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class FirstPersonWalker : MonoBehaviour
@@ -19,9 +38,13 @@ namespace NazarethPlusCity
         public float capsuleRadius = 0.3f;
         public float safetyMargin = 0.08f;
         public float fallResetY = -1.5f;
+        public float fallDropMeters = 8f;
+        public float turnSpeed = 720f;
         public Vector3 spawnPosition;
         public float spawnYaw;
         public Transform eye;
+        public Transform cameraHeading;
+        public WalkerDrive drive = WalkerDrive.FirstPerson;
         public GameObject pausePanel;
         public GameObject hintPanel;
 
@@ -34,12 +57,28 @@ namespace NazarethPlusCity
         InputAction _sprint;
         InputAction _pause;
         InputAction _reset;
+        InputAction _ascend;
+        InputAction _descend;
+        InputAction _flightSpeed;
         float _pitch;
         float _verticalVelocity;
         Vector3 _lastSafe;
+        float _savedHeading;
         bool _paused;
         float _hintUntil;
         bool _hasSafe;
+
+        public bool InputBlocked { get; set; }
+        public bool AllowLookWhileUnlocked { get; set; }
+        public bool SuppressFlightVertical { get; set; }
+        public Vector3 LastSafePosition => _hasSafe ? _lastSafe : spawnPosition;
+        public bool HasSafePosition => _hasSafe;
+        public float Heading => transform.eulerAngles.y;
+        public float SavedHeading => _savedHeading;
+        public CharacterController Controller => _controller;
+        public Vector3 Velocity { get; private set; }
+        public bool IsGrounded { get; private set; }
+        public bool JumpAcceptedThisFrame { get; private set; }
 
         void Awake()
         {
@@ -70,8 +109,17 @@ namespace NazarethPlusCity
 
             _lastSafe = transform.position;
             _hasSafe = true;
-            _hintUntil = Time.unscaledTime + 8f;
-            LockCursor(true);
+            _savedHeading = transform.eulerAngles.y;
+            if (ViewModeManager.Instance != null)
+            {
+                HideHint();
+                LockCursor(false);
+            }
+            else
+            {
+                _hintUntil = Time.unscaledTime + 8f;
+                LockCursor(true);
+            }
         }
 
         void Update()
@@ -79,16 +127,38 @@ namespace NazarethPlusCity
             if (hintPanel != null && hintPanel.activeSelf && Time.unscaledTime >= _hintUntil)
                 hintPanel.SetActive(false);
 
+            bool manager = ViewModeManager.Instance != null;
             if (_pause != null && _pause.WasPressedThisFrame())
-                SetPaused(!_paused);
-            if (_reset != null && _reset.WasPressedThisFrame())
-                ResetToSpawn();
-            if (_paused)
-                return;
+            {
+                if (manager)
+                    ViewModeManager.Instance.OnEscape();
+                else if (GetComponent<AssetPlacementController>() is AssetPlacementController placement && placement.TryHandleEscape())
+                    return;
+                else
+                    SetPaused(!_paused);
+            }
 
-            Look();
-            MoveBody();
+            if (_reset != null && _reset.WasPressedThisFrame())
+            {
+                if (manager)
+                    ViewModeManager.Instance.OnReturnToSpawn();
+                else
+                    ResetToSpawn();
+            }
+
+            ApplyGameplayFrame(ReadControls());
+        }
+
+        public bool ApplyGameplayFrame(CityControlFrame frame)
+        {
+            JumpAcceptedThisFrame = false;
+            if (_paused || InputBlocked || drive == WalkerDrive.Parked)
+                return false;
+            if (drive == WalkerDrive.FirstPerson)
+                Look(frame.look);
+            MoveBody(frame);
             EnforceBoundary();
+            return true;
         }
 
         void BindActions()
@@ -102,32 +172,89 @@ namespace NazarethPlusCity
             _sprint = _map.FindAction("Sprint", true);
             _pause = _map.FindAction("Pause", true);
             _reset = _map.FindAction("ReturnToSpawn", true);
+            _ascend = _map.FindAction("Ascend", false);
+            _descend = _map.FindAction("Descend", false);
+            _flightSpeed = _map.FindAction("FlightSpeed", false);
         }
 
-        void Look()
+        public CityControlFrame ReadControls()
         {
-            if (eye == null || _look == null)
+            if (InputBlocked)
+                return default;
+            Vector2 look = _look != null ? _look.ReadValue<Vector2>() : Vector2.zero;
+            if (Cursor.lockState != CursorLockMode.Locked && !AllowLookWhileUnlocked)
+                look = Vector2.zero;
+            bool ascend = _ascend != null && _ascend.IsPressed();
+            bool descend = _descend != null && _descend.IsPressed();
+            if (SuppressFlightVertical)
+            {
+                ascend = false;
+                descend = false;
+            }
+
+            return new CityControlFrame
+            {
+                move = _move != null ? _move.ReadValue<Vector2>() : Vector2.zero,
+                look = look,
+                jumpPressed = _jump != null && _jump.WasPressedThisFrame(),
+                sprint = _sprint != null && _sprint.IsPressed(),
+                ascend = ascend,
+                descend = descend,
+                scroll = _flightSpeed != null ? _flightSpeed.ReadValue<float>() : 0f
+            };
+        }
+
+        void Look(Vector2 delta)
+        {
+            if (eye == null)
                 return;
-            Vector2 delta = _look.ReadValue<Vector2>();
             transform.Rotate(0f, delta.x * lookSensitivity, 0f, Space.World);
             _pitch = Mathf.Clamp(_pitch - delta.y * lookSensitivity, -85f, 85f);
             eye.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
         }
 
-        void MoveBody()
+        void MoveBody(CityControlFrame frame)
         {
-            Vector2 input = _move != null ? _move.ReadValue<Vector2>() : Vector2.zero;
+            Vector2 input = frame.move;
             if (input.sqrMagnitude > 1f)
                 input.Normalize();
-            float speed = _sprint != null && _sprint.IsPressed() ? sprintSpeed : walkSpeed;
-            Vector3 planar = (transform.right * input.x + transform.forward * input.y) * speed;
+            Transform basis = drive == WalkerDrive.ThirdPerson && cameraHeading != null ? cameraHeading : transform;
+            Vector3 forward = basis.forward;
+            forward.y = 0f;
+            Vector3 right = basis.right;
+            right.y = 0f;
+            if (forward.sqrMagnitude < 0.0001f)
+                forward = new Vector3(transform.forward.x, 0f, transform.forward.z);
+            if (right.sqrMagnitude < 0.0001f)
+                right = new Vector3(transform.right.x, 0f, transform.right.z);
+            forward.Normalize();
+            right.Normalize();
+            Vector3 wish = right * input.x + forward * input.y;
+            if (wish.sqrMagnitude > 1f)
+                wish.Normalize();
+            if (drive == WalkerDrive.ThirdPerson && wish.sqrMagnitude > 0.0004f)
+            {
+                Quaternion face = Quaternion.LookRotation(wish, Vector3.up);
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, face, turnSpeed * Time.deltaTime);
+            }
+
+            float speed = frame.sprint ? sprintSpeed : walkSpeed;
+            Vector3 planar = wish * speed;
             if (_controller.isGrounded && _verticalVelocity < 0f)
                 _verticalVelocity = -2f;
-            if (_jump != null && _jump.WasPressedThisFrame() && _controller.isGrounded)
+            bool jumped = false;
+            if (frame.jumpPressed && _controller.isGrounded)
+            {
                 _verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                jumped = true;
+            }
+
             _verticalVelocity += gravity * Time.deltaTime;
             planar.y = _verticalVelocity;
             _controller.Move(planar * Time.deltaTime);
+            Velocity = _controller.velocity;
+            IsGrounded = _controller.isGrounded;
+            JumpAcceptedThisFrame = jumped;
         }
 
         void EnsureReady()
@@ -142,7 +269,70 @@ namespace NazarethPlusCity
         {
             EnsureReady();
             _lastSafe = transform.position;
+            _savedHeading = transform.eulerAngles.y;
             _hasSafe = true;
+        }
+
+        public void Teleport(Vector3 position, float yaw, bool rememberSafe)
+        {
+            EnsureReady();
+            bool wasEnabled = _controller != null && _controller.enabled;
+            if (_controller != null)
+                _controller.enabled = false;
+            transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yaw, 0f));
+            if (_controller != null)
+                _controller.enabled = wasEnabled || drive != WalkerDrive.Parked;
+            _verticalVelocity = 0f;
+            Velocity = Vector3.zero;
+            IsGrounded = true;
+            JumpAcceptedThisFrame = false;
+            if (rememberSafe)
+            {
+                _lastSafe = position;
+                _savedHeading = yaw;
+                _hasSafe = true;
+            }
+        }
+
+        public void ParkForFlight()
+        {
+            EnsureReady();
+            _savedHeading = transform.eulerAngles.y;
+            if (_controller != null && _controller.enabled && _controller.isGrounded)
+            {
+                _lastSafe = transform.position;
+                _hasSafe = true;
+            }
+
+            drive = WalkerDrive.Parked;
+            _verticalVelocity = 0f;
+            cameraHeading = null;
+        }
+
+        public void ResumeWalking(WalkerDrive next, bool restoreLastSafe)
+        {
+            EnsureReady();
+            if (next == WalkerDrive.Parked)
+                next = WalkerDrive.FirstPerson;
+            if (restoreLastSafe)
+                Teleport(LastSafePosition, _savedHeading, true);
+            drive = next;
+            _verticalVelocity = 0f;
+            if (_controller != null)
+                _controller.enabled = true;
+        }
+
+        public void SetDrive(WalkerDrive next)
+        {
+            if (next == WalkerDrive.Parked)
+            {
+                ParkForFlight();
+                return;
+            }
+
+            drive = next;
+            if (_controller != null && !_controller.enabled)
+                _controller.enabled = true;
         }
 
         public Vector3 ApplyContainment()
@@ -152,18 +342,33 @@ namespace NazarethPlusCity
             return transform.position;
         }
 
+        bool FellBelowGround(Vector3 position)
+        {
+            if (TerrainGround.TrySurface(position.x, position.z, out float surface))
+                return position.y < surface - Mathf.Max(1f, fallDropMeters);
+            return position.y < fallResetY;
+        }
+
+        bool Recoverable(Vector3 position)
+        {
+            if (TerrainGround.TrySurface(position.x, position.z, out float surface))
+                return position.y >= surface - 1f;
+            return position.y >= fallResetY;
+        }
+
         void EnforceBoundary()
         {
             EnsureReady();
             Vector3 position = transform.position;
             Vector2 flat = new Vector2(position.x, position.z);
             bool inside = _boundary == null || _boundary.IsCapsuleInside(flat, capsuleRadius, safetyMargin);
-            bool fell = position.y < fallResetY;
+            bool fell = FellBelowGround(position);
             if (inside && !fell)
             {
                 if (_controller.isGrounded)
                 {
                     _lastSafe = position;
+                    _savedHeading = transform.eulerAngles.y;
                     _hasSafe = true;
                 }
 
@@ -171,8 +376,8 @@ namespace NazarethPlusCity
             }
 
             Vector3 recover = _hasSafe ? _lastSafe : spawnPosition;
-            if (recover.y < 0f)
-                recover.y = spawnPosition.y;
+            if (!Recoverable(recover))
+                recover = spawnPosition;
             _controller.enabled = false;
             transform.position = recover;
             _controller.enabled = true;
@@ -191,7 +396,25 @@ namespace NazarethPlusCity
                 eye.localRotation = Quaternion.identity;
             _verticalVelocity = 0f;
             _lastSafe = spawnPosition;
+            _savedHeading = spawnYaw;
             _hasSafe = true;
+        }
+
+        public void ShowHint(string text, float seconds = 8f)
+        {
+            if (hintPanel == null)
+                return;
+            var label = hintPanel.GetComponent<Text>();
+            if (label != null && !string.IsNullOrEmpty(text))
+                label.text = text;
+            hintPanel.SetActive(true);
+            _hintUntil = Time.unscaledTime + seconds;
+        }
+
+        public void HideHint()
+        {
+            if (hintPanel != null)
+                hintPanel.SetActive(false);
         }
 
         public void SetPaused(bool paused)
@@ -211,7 +434,15 @@ namespace NazarethPlusCity
 
         void OnApplicationFocus(bool focused)
         {
-            if (focused && !_paused)
+            if (!focused)
+                return;
+            if (ViewModeManager.Instance != null)
+            {
+                ViewModeManager.Instance.ApplyCursor();
+                return;
+            }
+
+            if (!_paused)
                 LockCursor(true);
         }
     }
