@@ -40,8 +40,10 @@ The generator reads, and does not modify:
 - `Data/city_boundary.geojson`
 - `Data/buildings.geojson`
 - `Data/streets.geojson`
+- `Data/building_models.json`
+- `Data/building_models/*.glb`
 
-`Data/building_models` is intentionally unused. Every building is an extrusion of its GeoJSON footprint. There is no terrain import and no vehicles.
+Buildings listed in `Data/building_models.json` use the matching GLB from `Data/building_models` as their visible mesh. The generator imports those files into `Assets/NazarethPlusCity/Generated/BuildingModels` and the saved scene references the imported prefabs. Buildings without a matched model stay footprint extrusions. The wheelie bin and ladder files in that folder are not building models.
 
 Rebuild replaces generator-owned objects under the `Nazareth` hierarchy and the meshes in `Assets/NazarethPlusCity/Generated/Meshes`. Hand-authored objects without a `GeneratorOwned` key are left alone. Per-building height and tint overrides, and per-street width overrides, are kept. Transforms of generated objects are placed from the source coordinates again.
 
@@ -56,7 +58,7 @@ After a run, counts and every feature id are in:
 
 | Object | Role |
 | --- | --- |
-| `Nazareth/Buildings/Building_<id>` | One object per building feature. A repaired multi-part footprint keeps extra mesh children on that same object. |
+| `Nazareth/Buildings/Building_<id>` | One object per building feature. A matched GLB is a `Model` child and the extrusion stays hidden. A repaired multi-part footprint keeps extra mesh children on that same object. |
 | `Nazareth/Streets/Street_<id>` | One object per street feature. Clipped pieces stay on that object. |
 | `Nazareth/Ground/CityGround` | Flat earth mesh of the real boundary, including the interior hole. |
 | `Nazareth/Boundary/CityBoundary` | Saved polygon, invisible border collision, optional outline. |

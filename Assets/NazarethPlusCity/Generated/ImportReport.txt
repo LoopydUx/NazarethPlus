@@ -3,7 +3,8 @@ Engine: Unity 6000.1.7f1, Universal Render Pipeline, Windows desktop.
 1 Unity unit = 1 meter. +X east, +Y up, +Z north. localGroundY = (sourceElevation - elevationOrigin) * worldUnitsPerMetre.
 GeoJSON is WGS84 with coordinates ordered longitude, latitude. Building extrusion height is separate from ground elevation.
 Terrain elevation uses localGroundY = (sourceElevation - elevationOrigin) * worldUnitsPerMetre.
-Building models in Data/building_models are not used. Every building is a footprint extrusion.
+Matched building models are imported from Data/building_models into Assets/NazarethPlusCity/Generated/BuildingModels and referenced by the saved scene.
+Buildings using a GLB: 9. Buildings using an extrusion: 6252. GLB attach failures: 0.
 
 Boundary features: 1
 Buildings: source 6261, generated 6261, skipped 0
@@ -29,9 +30,26 @@ Lowest base way/1080291853: previous level base was the mesh bottom on the flat 
 Highest base way/1067893430: previous level base was the mesh bottom on the flat Y=0 plane (-0.05 m). New level base Y 355.63, building height 9.00 m, foundation 0.22 m. base is the highest terrain under the occupied footprint
 Deepest foundation way/1067581641: previous level base was the mesh bottom on the flat Y=0 plane (-0.05 m). New level base Y 319.22, building height 9.00 m, foundation 21.08 m. base is the highest terrain under the occupied footprint; tall foundation 21.1 m kept for inspection
 MultiPolygon: none found.
-Courtyard relation/10050130: previous level base was the mesh bottom on the flat Y=0 plane (-0.05 m). New level base Y 223.97, building height 6.00 m, foundation 4.36 m. base is the highest terrain under the occupied footprint
+Courtyard relation/14447191: previous level base was the mesh bottom on the flat Y=0 plane (-0.05 m). New level base Y 236.48, building height 15.00 m, foundation 4.78 m. base is the highest terrain under the occupied footprint
 Spawn validation passed.
 Checked 12 building roof heights against their resolved or override height.
+
+Building models:
+Building model folder: Data/building_models. Catalog: Data/building_models.json.
+Duplicate stable feature ids in buildings.geojson: 0.
+Derived map way/1072682430 -> way/1072682430 by stable feature id. File ceca39ebb1ea4e6894a7760ebf9779c5.glb yaw 225 scale 1.21 offset 0 E, 0 N.
+Derived map bldg-1792530028154-g20nka -> bldg-1792530028154-g20nka by stable feature id. File 63765f1a7f504e88bc69cfc908301b6b.glb yaw 226 scale 1.8 offset 0 E, 0 N.
+Explicit map 2febe5f1-1db2-400e-b905-f28445661560 -> way/583523590 (catalog id is properties.id, stable feature id is the GeoJSON id). File e9f1f40e676d454da9ba651aed65bb42.glb yaw 242 scale 2.05 offset 0.5 E, -9 N.
+Explicit map a64cd6ea-b32e-48de-9b73-8a0a5aac7ae1 -> way/741277388 (catalog id is properties.id, stable feature id is the GeoJSON id). File d13c221c18d142bd86cf6d83fe6b9e58.glb yaw 254 scale 1.55 offset 4.5 E, -12 N.
+Derived map way/1157250968 -> way/1157250968 by stable feature id. File be7dc716220946ec879ac47c85160f02.glb yaw 202 scale 0.9 offset 0 E, 0 N.
+Derived map bldg-1793468222984-6aq6wb -> bldg-1793468222984-6aq6wb by stable feature id. File 9a91a59c577a41e1af48248d8cdd6ae9.glb yaw 282 scale 1 offset 0 E, 0 N.
+Derived map bldg-1793470246111-909x5t -> bldg-1793470246111-909x5t by stable feature id. File d76d587ba70849a38d6bc37b05a2ebd4.glb yaw 13 scale 1 offset 9.5 E, -4 N.
+Explicit map eb8469ea-cd82-4d6c-86c0-96b7c9e98ca8 -> relation/14434382 (catalog id is properties.id, stable feature id is the GeoJSON id). File 97a598719a7f4a7d89ce3f3021c4e628.glb yaw 6 scale 1 offset 0 E, 0 N.
+Derived map way/623457838 -> way/623457838 by stable feature id. File 42134dd487224ea9a84c0cb3b68752e6.glb yaw 258 scale 1.05 offset 0 E, 0 N.
+Unlisted GLB Data/building_models/Assets/military_trenches_equipment_ladder_wood_s_ydxqael_high.glb is not a catalog building and was not imported.
+Unlisted GLB Data/building_models/Assets/nazareth-green-wheelie-bin-closed.glb is not a catalog building and was not imported.
+Unlisted GLB files: 2.
+Model match summary: mapped 9, missing 0, duplicate 0, ambiguous 0, imported 0, reused 9.
 
 Outside features (retained, not moved):
 (none)
@@ -271,7 +289,7 @@ Terrain	terrain.json	Generated	113707 triangles in 78 chunks; unsupported 0 m2; 
 Building	relation/10050130	Generated	source height 6 (meters); mesh height 6 m; level base Y 223.97; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	relation/14183381	Generated	source height 30 (meters); mesh height 30 m; level base Y 278.85; base is the highest terrain under the occupied footprint; tall foundation 11.7 m kept for inspection; parts 1; inside city boundary
 Building	relation/14230855	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 225.62; base is the highest terrain under the occupied footprint; tall foundation 8.9 m kept for inspection; parts 1; inside city boundary
-Building	relation/14434382	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 228.59; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
+Building	relation/14434382	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 228.59; base is the highest terrain under the occupied footprint; parts 1; inside city boundary; GLB 97a598719a7f4a7d89ce3f3021c4e628.glb (Explicit map eb8469ea-cd82-4d6c-86c0-96b7c9e98ca8 -> relation/14434382 (catalog id is properties.id, stable feature id is the GeoJSON id).)
 Building	relation/14447191	Generated	source height 15 (meters); mesh height 15 m; level base Y 236.48; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	relation/14447364	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 236.38; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/97417853	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 224.52; base is the highest terrain under the occupied footprint; tall foundation 11.6 m kept for inspection; parts 1; inside city boundary
@@ -294,7 +312,7 @@ Building	way/437680824	Generated	no usable height or floor count; fallback 3 flo
 Building	way/437680825	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 302.59; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/470192465	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 213.58; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/470192466	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 216.40; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
-Building	way/583523590	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 355.00; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
+Building	way/583523590	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 355.00; base is the highest terrain under the occupied footprint; parts 1; inside city boundary; GLB e9f1f40e676d454da9ba651aed65bb42.glb (Explicit map 2febe5f1-1db2-400e-b905-f28445661560 -> way/583523590 (catalog id is properties.id, stable feature id is the GeoJSON id).)
 Building	way/583523591	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 237.60; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/583523592	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 236.07; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/583523594	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 302.07; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
@@ -312,7 +330,7 @@ Building	way/587612473	Generated	no usable height or floor count; fallback 3 flo
 Building	way/618469732	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 187.33; base is the highest terrain under the occupied footprint; tall foundation 9.8 m kept for inspection; parts 1; inside city boundary
 Building	way/618469736	Generated	source height 24 (meters); mesh height 24 m; level base Y 176.30; base is the highest terrain under the occupied footprint; tall foundation 14.7 m kept for inspection; parts 1; inside city boundary
 Building	way/619883622	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 252.56; base is the highest terrain under the occupied footprint; tall foundation 16.2 m kept for inspection; parts 1; inside city boundary
-Building	way/623457838	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 233.39; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
+Building	way/623457838	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 233.39; base is the highest terrain under the occupied footprint; parts 1; inside city boundary; GLB 42134dd487224ea9a84c0cb3b68752e6.glb (Derived map way/623457838 -> way/623457838 by stable feature id.)
 Building	way/623799652	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 227.70; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/623799655	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 227.59; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/623799660	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 234.47; part of the footprint has no terrain mesh; base uses the highest covered triangle; parts 1; crosses city boundary, retained in place and not moved
@@ -1473,7 +1491,7 @@ Building	way/728194314	Generated	no usable height or floor count; fallback 3 flo
 Building	way/728194315	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 224.27; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/728194316	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 221.30; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/741068387	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 216.62; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
-Building	way/741277388	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 184.11; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
+Building	way/741277388	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 184.11; base is the highest terrain under the occupied footprint; parts 1; inside city boundary; GLB d13c221c18d142bd86cf6d83fe6b9e58.glb (Explicit map a64cd6ea-b32e-48de-9b73-8a0a5aac7ae1 -> way/741277388 (catalog id is properties.id, stable feature id is the GeoJSON id).)
 Building	way/741277389	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 191.69; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/822493140	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 223.14; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/868074838	Generated	source height 3 (meters); mesh height 3 m; level base Y 243.91; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
@@ -6074,7 +6092,7 @@ Building	way/1088614988	Generated	no usable height or floor count; fallback 3 fl
 Building	way/1088614989	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 248.21; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/1088614990	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 252.07; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/1088615064	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 269.20; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
-Building	way/1157250968	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 230.55; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
+Building	way/1157250968	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 230.55; base is the highest terrain under the occupied footprint; parts 1; inside city boundary; GLB be7dc716220946ec879ac47c85160f02.glb (Derived map way/1157250968 -> way/1157250968 by stable feature id.)
 Building	way/1157250969	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 237.13; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/1230311333	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 175.07; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	way/1230311334	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 175.45; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
@@ -6499,11 +6517,11 @@ Building	bldg-1788467770079-jlavlu	Generated	no usable height or floor count; fa
 Building	bldg-1788808104194-wscsen	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 196.06; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	bldg-1788808254917-dwwmk3	Generated	source height 3 (meters); mesh height 3 m; level base Y 199.63; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	bldg-1788808278156-4jpe1q	Generated	source height 3 (meters); mesh height 3 m; level base Y 199.17; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
-Building	way/1072682430	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 327.46; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
-Building	bldg-1792530028154-g20nka	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 223.35; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
-Building	bldg-1793468222984-6aq6wb	Generated	source height 3 (meters); mesh height 3 m; level base Y 228.17; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
+Building	way/1072682430	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 327.46; base is the highest terrain under the occupied footprint; parts 1; inside city boundary; GLB ceca39ebb1ea4e6894a7760ebf9779c5.glb (Derived map way/1072682430 -> way/1072682430 by stable feature id.)
+Building	bldg-1792530028154-g20nka	Generated	no usable height or floor count; fallback 3 floors / 9 m; mesh height 9 m; level base Y 223.35; base is the highest terrain under the occupied footprint; parts 1; inside city boundary; GLB 63765f1a7f504e88bc69cfc908301b6b.glb (Derived map bldg-1792530028154-g20nka -> bldg-1792530028154-g20nka by stable feature id.)
+Building	bldg-1793468222984-6aq6wb	Generated	source height 3 (meters); mesh height 3 m; level base Y 228.17; base is the highest terrain under the occupied footprint; parts 1; inside city boundary; GLB 9a91a59c577a41e1af48248d8cdd6ae9.glb (Derived map bldg-1793468222984-6aq6wb -> bldg-1793468222984-6aq6wb by stable feature id.)
 Building	bldg-1793468224728-z41rji	Generated	source height 3 (meters); mesh height 3 m; level base Y 229.04; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
-Building	bldg-1793470246111-909x5t	Generated	source height 3 (meters); mesh height 3 m; level base Y 213.49; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
+Building	bldg-1793470246111-909x5t	Generated	source height 3 (meters); mesh height 3 m; level base Y 213.49; base is the highest terrain under the occupied footprint; parts 1; inside city boundary; GLB d76d587ba70849a38d6bc37b05a2ebd4.glb (Derived map bldg-1793470246111-909x5t -> bldg-1793470246111-909x5t by stable feature id.)
 Building	bldg-1793822720940-acph4s	Generated	source height 3 (meters); mesh height 3 m; level base Y 239.12; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	bldg-1793822721626-83edaw	Generated	source height 3 (meters); mesh height 3 m; level base Y 243.05; base is the highest terrain under the occupied footprint; parts 1; inside city boundary
 Building	bldg-1793822722636-c7o9gx	Generated	source height 3 (meters); mesh height 3 m; level base Y 240.47; base is the highest terrain under the occupied footprint; parts 1; inside city boundary

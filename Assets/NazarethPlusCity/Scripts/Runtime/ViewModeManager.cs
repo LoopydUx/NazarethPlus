@@ -122,7 +122,11 @@ namespace NazarethPlusCity
         {
             if (mode == ExplorationMode.None)
                 return;
-            bool fromBird = Current == ExplorationMode.BirdsEye;
+            // The first choice stays on the street spawn. A later choice keeps the map
+            // location captured below, so leaving the flying camera does not return home.
+            Vector3 mapPosition = default;
+            float yaw = 0f;
+            bool preserveLocation = Current != ExplorationMode.None && TryCaptureMapLocation(out mapPosition, out yaw);
             WelcomeOpen = false;
             PauseOpen = false;
             if (welcomeRoot != null)
@@ -130,7 +134,7 @@ namespace NazarethPlusCity
             if (pauseRoot != null)
                 pauseRoot.SetActive(false);
             Time.timeScale = 1f;
-            ApplyMode(mode, fromBird);
+            ApplyMode(mode, preserveLocation, mapPosition, yaw);
             if (walker != null)
                 walker.InputBlocked = false;
             ApplyCursor();
@@ -222,11 +226,13 @@ namespace NazarethPlusCity
             ShowModeHint();
         }
 
-        void ApplyMode(ExplorationMode mode, bool restoreGroundedPosition)
+        void ApplyMode(ExplorationMode mode, bool preserveLocation, Vector3 mapPosition, float yaw)
         {
             Current = mode;
             if (walker == null)
                 return;
+            if (preserveLocation)
+                walker.Teleport(mapPosition, yaw, true);
             if (mode == ExplorationMode.BirdsEye)
             {
                 walker.ParkForFlight();
@@ -234,15 +240,17 @@ namespace NazarethPlusCity
                     character.SetVisible(true);
                 UseRig(false, false, true);
                 if (birdsEye != null)
-                    birdsEye.Activate(walker.transform);
+                {
+                    if (preserveLocation)
+                        birdsEye.ActivateAt(walker.transform.position, yaw);
+                    else
+                        birdsEye.Activate(walker.transform);
+                }
             }
             else
             {
                 WalkerDrive drive = mode == ExplorationMode.ThirdPerson ? WalkerDrive.ThirdPerson : WalkerDrive.FirstPerson;
-                if (restoreGroundedPosition)
-                    walker.ResumeWalking(drive, true);
-                else
-                    walker.SetDrive(drive);
+                walker.SetDrive(drive);
                 bool third = mode == ExplorationMode.ThirdPerson;
                 if (character != null)
                     character.SetVisible(third);
@@ -253,6 +261,39 @@ namespace NazarethPlusCity
             }
 
             ShowModeHint();
+        }
+
+        bool TryCaptureMapLocation(out Vector3 position, out float yaw)
+        {
+            position = default;
+            yaw = 0f;
+            if (Current == ExplorationMode.BirdsEye && birdsEye != null && birdsEye.HasMapFocus)
+            {
+                position = birdsEye.MapFocus;
+                yaw = birdsEye.FocusYaw;
+                if (walker != null)
+                {
+                    Vector3 fallback = birdsEye.transform.position;
+                    fallback.y = position.y;
+                    position = walker.ClampToPlayable(position, fallback);
+                    float dx = position.x - walker.transform.position.x;
+                    float dz = position.z - walker.transform.position.z;
+                    if (dx * dx + dz * dz > 0.0001f && PlacementGround.TrySupport(position.x, position.z, walker.transform, out float ground))
+                        position.y = ground;
+                    else
+                        position.y = walker.transform.position.y;
+                }
+
+                return true;
+            }
+
+            if (walker == null)
+                return false;
+            position = walker.transform.position;
+            yaw = walker.Heading;
+            if (Current == ExplorationMode.ThirdPerson && thirdPerson != null)
+                yaw = thirdPerson.yaw;
+            return true;
         }
 
         void UseRig(bool firstPerson, bool thirdPersonOn, bool birdsEyeOn)

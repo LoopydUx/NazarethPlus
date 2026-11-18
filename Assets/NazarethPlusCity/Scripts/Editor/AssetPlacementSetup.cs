@@ -36,6 +36,7 @@ namespace NazarethPlusCity.EditorTools
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 throw new InvalidOperationException("Asset placement setup cannot change the scene during Play mode.");
             WheelieBinPrefabBuilder.BuildOrUpdate();
+            WoodenLadderPrefabBuilder.BuildOrUpdate();
             var scene = EditorSceneManager.GetActiveScene();
             string openPath = string.IsNullOrEmpty(scene.path) ? "" : scene.path.Replace('\\', '/');
             if (openPath != CityImporter.ScenePath)
@@ -47,6 +48,10 @@ namespace NazarethPlusCity.EditorTools
             if (hud != null)
                 PlacementHudBuilder.Ensure(hud, true);
             EnsurePlayerWiring(walker);
+            var ladderSettings = AssetDatabase.LoadAssetAtPath<LadderSystemSettings>(LadderIds.SettingsPath);
+            var ladderPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(LadderIds.PrefabPath);
+            if (ladderSettings != null && ladderPrefab != null)
+                LadderSystemSetup.EnsurePlayerWiring(walker, ladderSettings, ladderPrefab);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             AssetDatabase.SaveAssets();

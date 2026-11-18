@@ -88,3 +88,398 @@ INFO prefab type Variant
 PASS trooper prefab is a variant
 INFO active scene Assets/NazarethPlusCity/Scenes/NazarethPlusCity.unity
 RESULT pass
+
+Play mode verification
+PASS manager exists
+PASS single walker
+PASS single character controller
+PASS welcome open on play
+PASS welcome title
+PASS welcome subtitle
+PASS first person card
+PASS third person card
+PASS bird card
+PASS cursor unlocked
+PASS gameplay blocked
+PASS blocked frame does not move
+PASS welcome reads no look or move
+PASS escape cannot skip the first choice
+PASS one camera during welcome
+PASS one listener during welcome
+PASS character hidden during welcome
+INFO screen 640x480 panel (1100.00, 640.00) columns 3
+PASS first person button
+PASS first view keeps the launch position
+PASS first view keeps the launch heading
+PASS launch position is the street spawn
+PASS first person camera only
+PASS first person listener only
+PASS character hidden in first person
+UNVERIFIED cursor lock in batch mode (lockState=None visible=False). Play Mode in the editor still calls Cursor.lockState = Locked.
+INFO first person step 0.000 dt 0.0002
+PASS first person frame accepted
+FAIL first person frame moves
+PASS first person look yaws the body
+PASS third person keeps position
+PASS third person keeps heading
+PASS third person camera only
+PASS one listener in third person
+PASS trooper visible
+INFO trooper feet offset 0.042 height 1.71
+PASS trooper feet on capsule
+PASS trooper human height
+INFO trooper shader Universal Render Pipeline/Lit
+PASS trooper materials are URP
+PASS animation separated from the capsule
+PASS root motion stays off
+PASS humanoid controller assigned
+PASS placement remains during animation
+PASS idle speed settles
+PASS walk speed drives locomotion
+INFO animation step 0.000 controller speed 0.00
+FAIL walk frame reaches the controller
+INFO jump accepted False vertical 0.00
+FAIL jump is accepted from the ground
+FAIL jump enters the jump state
+INFO landed False grounded False state 0.00
+FAIL jump returns to the ground
+FAIL landing returns to locomotion
+PASS animation does not move the character
+INFO arm down 0.97 head above hips True
+PASS idle pose is not a T-pose
+INFO camera distance beside Foundation hit 18.37 resolved 0.85 desired 4.40
+PASS third person camera collision
+PASS bird mode camera
+PASS one listener in bird mode
+PASS walker parked
+PASS parked player stays grounded
+PASS bird starts above the player
+PASS bird starts clear of terrain
+INFO buried y 294.29 confined y 333.91
+PASS bird confine stays above terrain
+INFO boundary confine (9.3, 363.9, 38.2)
+PASS bird respects city boundary
+PASS return from bird keeps the map position
+PASS return from bird restores grounded height
+PASS return from bird ignores flight altitude
+PASS return heading
+PASS still one walker
+PASS one camera after return
+PASS one listener after return
+PASS escape opens pause
+PASS change view reopens selector
+PASS selector can choose third person again
+INFO walked (9.25, 324.34, 38.19) yaw 265.1 from spawn 17.20
+PASS player left the street spawn
+PASS third person opens at the walked intersection
+PASS third person keeps the walked heading
+PASS third person uses its orbit offset
+PASS first person returns to the walked intersection
+PASS first person keeps the walked heading
+PASS repeated view switches stay at the walked intersection
+PASS repeated view switches keep the walked heading
+PASS orbit switch keeps the map position
+PASS first person adopts the orbit heading
+PASS escape opens pause before resume
+PASS closing the menu keeps the mode
+PASS closing the menu keeps the location
+PASS closing the menu keeps the heading
+PASS change view leaves the current mode selected
+PASS closing the selector without a choice keeps the mode
+PASS closing the selector without a choice keeps the location
+PASS bird keeps the player on the walked ground
+PASS bird uses its own camera height
+PASS bird map focus is the walked intersection
+INFO bird back offset 36.00
+PASS bird camera keeps its back offset
+PASS bird keeps the walked heading
+INFO bird flight 45.61 focus (45.3, 324.3, 10.2) camera (48.3, 429.3, -25.7)
+PASS bird flight moves the map focus
+PASS first person opens at the flown map focus
+FAIL first person stands on the flown surface
+PASS first person ignores the bird altitude
+PASS first person keeps the bird heading
+PASS bird reopens at the flown map focus
+PASS player stays under the reopened bird focus
+PASS bird reapplies its camera height
+PASS bird keeps the landed heading
+PASS third person opens at the flown map focus
+PASS third person keeps the flown heading
+PASS third person restores its orbit offset
+PASS repeated switches keep the flown map focus
+PASS repeated switches keep the flown heading
+PASS return to spawn uses the street spawn
+PASS return to spawn restores the spawn height
+PASS return to spawn restores the spawn heading
+INFO buildings 5774 streets 1092 terrainChunks 17
+PASS city buildings remain
+PASS city streets remain
+PASS terrain remains
+INFO prefab type Variant
+PASS trooper prefab is a variant
+INFO active scene Assets/NazarethPlusCity/Scenes/NazarethPlusCity.unity
+RESULT fail 7
+
+Play mode verification
+PASS manager exists
+PASS single walker
+PASS single character controller
+PASS welcome open on play
+PASS welcome title
+PASS welcome subtitle
+PASS first person card
+PASS third person card
+PASS bird card
+PASS cursor unlocked
+PASS gameplay blocked
+PASS blocked frame does not move
+PASS welcome reads no look or move
+PASS escape cannot skip the first choice
+PASS one camera during welcome
+PASS one listener during welcome
+PASS character hidden during welcome
+INFO screen 640x480 panel (1100.00, 640.00) columns 3
+PASS first person button
+PASS first view keeps the launch position
+PASS first view keeps the launch heading
+PASS launch position is the street spawn
+PASS first person camera only
+PASS first person listener only
+PASS character hidden in first person
+UNVERIFIED cursor lock in batch mode (lockState=None visible=False). Play Mode in the editor still calls Cursor.lockState = Locked.
+INFO first person step 0.000 dt 0.0002
+PASS first person frame accepted
+FAIL first person frame moves
+PASS first person look yaws the body
+PASS third person keeps position
+PASS third person keeps heading
+PASS third person camera only
+PASS one listener in third person
+PASS trooper visible
+INFO trooper feet offset 0.042 height 1.71
+PASS trooper feet on capsule
+PASS trooper human height
+INFO trooper shader Universal Render Pipeline/Lit
+PASS trooper materials are URP
+PASS animation separated from the capsule
+PASS root motion stays off
+PASS humanoid controller assigned
+PASS placement remains during animation
+PASS idle speed settles
+PASS walk speed drives locomotion
+INFO animation step 0.000 controller speed 0.00
+FAIL walk frame reaches the controller
+INFO jump accepted False vertical 0.00
+FAIL jump is accepted from the ground
+FAIL jump enters the jump state
+INFO landed False grounded False state 0.00
+FAIL jump returns to the ground
+FAIL landing returns to locomotion
+PASS animation does not move the character
+INFO arm down 0.97 head above hips True
+PASS idle pose is not a T-pose
+INFO camera distance beside Foundation hit 18.37 resolved 0.85 desired 4.40
+PASS third person camera collision
+PASS bird mode camera
+PASS one listener in bird mode
+PASS walker parked
+PASS parked player stays grounded
+PASS bird starts above the player
+PASS bird starts clear of terrain
+INFO buried y 294.29 confined y 333.91
+PASS bird confine stays above terrain
+INFO boundary confine (9.3, 363.9, 38.2)
+PASS bird respects city boundary
+PASS return from bird keeps the map position
+PASS return from bird restores grounded height
+PASS return from bird ignores flight altitude
+PASS return heading
+PASS still one walker
+PASS one camera after return
+PASS one listener after return
+PASS escape opens pause
+PASS change view reopens selector
+PASS selector can choose third person again
+INFO walked (9.24, 324.34, 38.19) yaw 265.1 from spawn 17.19
+PASS player left the street spawn
+PASS third person opens at the walked intersection
+PASS third person keeps the walked heading
+PASS third person uses its orbit offset
+PASS first person returns to the walked intersection
+PASS first person keeps the walked heading
+PASS repeated view switches stay at the walked intersection
+PASS repeated view switches keep the walked heading
+PASS orbit switch keeps the map position
+PASS first person adopts the orbit heading
+PASS escape opens pause before resume
+PASS closing the menu keeps the mode
+PASS closing the menu keeps the location
+PASS closing the menu keeps the heading
+PASS change view leaves the current mode selected
+PASS closing the selector without a choice keeps the mode
+PASS closing the selector without a choice keeps the location
+PASS bird keeps the player on the walked ground
+PASS bird uses its own camera height
+PASS bird map focus is the walked intersection
+INFO bird back offset 36.00
+PASS bird camera keeps its back offset
+PASS bird keeps the walked heading
+INFO bird flight 45.61 focus (45.2, 324.3, 10.2) camera (48.3, 429.3, -25.7)
+PASS bird flight moves the map focus
+PASS first person opens at the flown map focus
+INFO feet 324.34 ground none
+FAIL first person stands on the flown surface
+PASS first person ignores the bird altitude
+PASS first person keeps the bird heading
+PASS bird reopens at the flown map focus
+PASS player stays under the reopened bird focus
+PASS bird reapplies its camera height
+PASS bird keeps the landed heading
+PASS third person opens at the flown map focus
+PASS third person keeps the flown heading
+PASS third person restores its orbit offset
+PASS repeated switches keep the flown map focus
+PASS repeated switches keep the flown heading
+PASS return to spawn uses the street spawn
+PASS return to spawn restores the spawn height
+PASS return to spawn restores the spawn heading
+INFO buildings 5774 streets 1092 terrainChunks 17
+PASS city buildings remain
+PASS city streets remain
+PASS terrain remains
+INFO prefab type Variant
+PASS trooper prefab is a variant
+INFO active scene Assets/NazarethPlusCity/Scenes/NazarethPlusCity.unity
+RESULT fail 7
+
+Play mode verification
+PASS manager exists
+PASS single walker
+PASS single character controller
+PASS welcome open on play
+PASS welcome title
+PASS welcome subtitle
+PASS first person card
+PASS third person card
+PASS bird card
+PASS cursor unlocked
+PASS gameplay blocked
+PASS blocked frame does not move
+PASS welcome reads no look or move
+PASS escape cannot skip the first choice
+PASS one camera during welcome
+PASS one listener during welcome
+PASS character hidden during welcome
+INFO screen 867x521 panel (1100.00, 640.00) columns 3
+PASS first person button
+PASS first view keeps the launch position
+PASS first view keeps the launch heading
+PASS launch position is the street spawn
+PASS first person camera only
+PASS first person listener only
+PASS character hidden in first person
+PASS cursor locked in first person
+INFO first person step 0.045 dt 0.0108
+PASS first person frame accepted
+PASS first person frame moves
+PASS first person look yaws the body
+PASS third person keeps position
+PASS third person keeps heading
+PASS third person camera only
+PASS one listener in third person
+PASS trooper visible
+INFO trooper feet offset 0.042 height 1.71
+PASS trooper feet on capsule
+PASS trooper human height
+INFO trooper shader Universal Render Pipeline/Lit
+PASS trooper materials are URP
+PASS animation separated from the capsule
+PASS root motion stays off
+PASS humanoid controller assigned
+PASS placement remains during animation
+PASS idle speed settles
+PASS walk speed drives locomotion
+INFO animation step 0.045 controller speed 4.20
+PASS walk frame reaches the controller
+INFO jump accepted False vertical -0.22
+FAIL jump is accepted from the ground
+FAIL jump enters the jump state
+INFO landed True grounded True state 0.00
+PASS jump returns to the ground
+FAIL landing returns to locomotion
+PASS animation does not move the character
+INFO arm down 0.97 head above hips True
+PASS idle pose is not a T-pose
+INFO camera distance beside Foundation hit 18.37 resolved 0.85 desired 4.40
+PASS third person camera collision
+PASS bird mode camera
+PASS one listener in bird mode
+PASS walker parked
+PASS parked player stays grounded
+PASS bird starts above the player
+PASS bird starts clear of terrain
+INFO buried y 294.29 confined y 333.91
+PASS bird confine stays above terrain
+INFO boundary confine (9.3, 363.9, 38.2)
+PASS bird respects city boundary
+PASS return from bird keeps the map position
+PASS return from bird restores grounded height
+PASS return from bird ignores flight altitude
+PASS return heading
+PASS still one walker
+PASS one camera after return
+PASS one listener after return
+PASS escape opens pause
+PASS change view reopens selector
+PASS selector can choose third person again
+INFO walked (6.88, 324.25, 37.99) yaw 265.1 from spawn 14.86
+PASS player left the street spawn
+PASS third person opens at the walked intersection
+PASS third person keeps the walked heading
+PASS third person uses its orbit offset
+PASS first person returns to the walked intersection
+PASS first person keeps the walked heading
+PASS repeated view switches stay at the walked intersection
+PASS repeated view switches keep the walked heading
+PASS orbit switch keeps the map position
+PASS first person adopts the orbit heading
+PASS escape opens pause before resume
+PASS closing the menu keeps the mode
+PASS closing the menu keeps the location
+PASS closing the menu keeps the heading
+PASS change view leaves the current mode selected
+PASS closing the selector without a choice keeps the mode
+PASS closing the selector without a choice keeps the location
+PASS bird keeps the player on the walked ground
+PASS bird uses its own camera height
+PASS bird map focus is the walked intersection
+INFO bird back offset 36.00
+PASS bird camera keeps its back offset
+PASS bird keeps the walked heading
+INFO bird flight 45.61 focus (42.9, 324.3, 10.0) camera (45.9, 429.3, -25.9)
+PASS bird flight moves the map focus
+PASS first person opens at the flown map focus
+INFO feet 324.25 ground none
+FAIL first person stands on the flown surface
+PASS first person ignores the bird altitude
+PASS first person keeps the bird heading
+PASS bird reopens at the flown map focus
+PASS player stays under the reopened bird focus
+PASS bird reapplies its camera height
+PASS bird keeps the landed heading
+PASS third person opens at the flown map focus
+PASS third person keeps the flown heading
+PASS third person restores its orbit offset
+PASS repeated switches keep the flown map focus
+PASS repeated switches keep the flown heading
+PASS return to spawn uses the street spawn
+PASS return to spawn restores the spawn height
+PASS return to spawn restores the spawn heading
+INFO buildings 5774 streets 1092 terrainChunks 17
+PASS city buildings remain
+PASS city streets remain
+PASS terrain remains
+INFO prefab type Variant
+PASS trooper prefab is a variant
+INFO active scene Assets/NazarethPlusCity/Scenes/NazarethPlusCity.unity
+RESULT fail 4

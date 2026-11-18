@@ -32,6 +32,8 @@ namespace NazarethPlusCity
         Vector3 _velocity;
         float _speed;
         CityBoundaryMap _boundary;
+        Vector3 _mapFocus;
+        bool _hasMapFocus;
         static readonly Vector2[] ProbeOffsets =
         {
             new Vector2(0f, 0f),
@@ -43,6 +45,25 @@ namespace NazarethPlusCity
 
         public float CurrentSpeed => _speed;
 
+        /// <summary>
+        /// Map point this camera is navigating. Flight slides it with the camera.
+        /// Height and the back offset are applied again on activate and are not part of the point.
+        /// </summary>
+        public Vector3 MapFocus => _mapFocus;
+        public bool HasMapFocus => _hasMapFocus;
+
+        public float FocusYaw
+        {
+            get
+            {
+                Vector3 forward = transform.forward;
+                forward.y = 0f;
+                if (forward.sqrMagnitude < 0.0001f)
+                    return transform.eulerAngles.y;
+                return Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
+            }
+        }
+
         void Awake()
         {
             _speed = flightSpeed;
@@ -51,21 +72,28 @@ namespace NazarethPlusCity
 
         public void Activate(Transform player)
         {
+            Vector3 origin = player != null ? player.position : transform.position;
+            float yaw = player != null ? player.eulerAngles.y : transform.eulerAngles.y;
+            ActivateAt(origin, yaw);
+        }
+
+        public void ActivateAt(Vector3 mapPosition, float yaw)
+        {
             if (_boundary == null)
                 _boundary = FindAnyObjectByType<CityBoundaryMap>();
             _speed = Mathf.Clamp(flightSpeed, minFlightSpeed, maxFlightSpeed);
             _velocity = Vector3.zero;
-            Vector3 origin = player != null ? player.position : transform.position;
-            float yaw = player != null ? player.eulerAngles.y : transform.eulerAngles.y;
             Vector3 flatForward = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
-            Vector3 desired = origin - flatForward * (initialHeight * 0.45f) + Vector3.up * initialHeight;
-            Vector3 parked = origin + Vector3.up * Mathf.Max(minGroundClearance, initialHeight);
+            Vector3 desired = mapPosition - flatForward * (initialHeight * 0.45f) + Vector3.up * initialHeight;
+            Vector3 parked = mapPosition + Vector3.up * Mathf.Max(minGroundClearance, initialHeight);
             transform.position = Confine(desired, parked);
-            Vector3 lookAt = origin + flatForward * 18f;
+            Vector3 lookAt = mapPosition + flatForward * 18f;
             Vector3 dir = lookAt - transform.position;
             if (dir.sqrMagnitude < 0.01f)
                 dir = flatForward + Vector3.down;
             transform.rotation = Quaternion.LookRotation(dir.normalized, Vector3.up);
+            _mapFocus = mapPosition;
+            _hasMapFocus = true;
         }
 
         void LateUpdate()
@@ -109,8 +137,21 @@ namespace NazarethPlusCity
             wish.y = (frame.ascend ? 1f : 0f) - (frame.descend ? 1f : 0f);
             wish.y *= verticalSpeed;
             _velocity = Vector3.MoveTowards(_velocity, wish, acceleration * Time.deltaTime);
+            ApplyFlightStep(_velocity * Time.deltaTime);
+        }
+
+        public Vector3 ApplyFlightStep(Vector3 worldDelta)
+        {
             Vector3 previous = transform.position;
-            transform.position = Confine(previous + _velocity * Time.deltaTime, previous);
+            transform.position = Confine(previous + worldDelta, previous);
+            if (_hasMapFocus)
+            {
+                Vector3 delta = transform.position - previous;
+                _mapFocus.x += delta.x;
+                _mapFocus.z += delta.z;
+            }
+
+            return transform.position;
         }
 
         void ApplyScroll(float raw)

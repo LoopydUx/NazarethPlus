@@ -75,13 +75,15 @@ namespace NazarethPlusCity.EditorTools
                 CityImporter.GenerateOrRebuild();
                 int buildings = UnityEngine.Object.FindObjectsByType<BuildingFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
                 int streets = UnityEngine.Object.FindObjectsByType<StreetFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
+                int models = UnityEngine.Object.FindObjectsByType<BuildingModelVisual>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
                 string firstPlacement = File.Exists(fingerprintPath) ? File.ReadAllText(fingerprintPath) : "";
                 CityImporter.GenerateOrRebuild();
                 int buildingsAgain = UnityEngine.Object.FindObjectsByType<BuildingFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
                 int streetsAgain = UnityEngine.Object.FindObjectsByType<StreetFeature>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
+                int modelsAgain = UnityEngine.Object.FindObjectsByType<BuildingModelVisual>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length;
                 string secondPlacement = File.Exists(fingerprintPath) ? File.ReadAllText(fingerprintPath) : "";
-                string check = "Rebuild check: buildings " + buildings + " then " + buildingsAgain + "; streets " + streets + " then " + streetsAgain + ".";
-                if (buildings != buildingsAgain || streets != streetsAgain)
+                string check = "Rebuild check: buildings " + buildings + " then " + buildingsAgain + "; streets " + streets + " then " + streetsAgain + "; GLB buildings " + models + " then " + modelsAgain + ".";
+                if (buildings != buildingsAgain || streets != streetsAgain || models != modelsAgain)
                     throw new InvalidOperationException(check + " Counts changed, so the rebuild did not stay one-to-one.");
                 if (firstPlacement.Length == 0 || firstPlacement != secondPlacement)
                     throw new InvalidOperationException(check + " Building level bases changed on the second rebuild.");

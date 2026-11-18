@@ -104,7 +104,7 @@ namespace NazarethPlusCity
             var block = new MaterialPropertyBlock();
             for (int i = 0; i < renderers.Length; i++)
             {
-                if (renderers[i].GetComponent<BuildingFoundation>() != null)
+                if (renderers[i].GetComponent<BuildingFoundation>() != null || BuildingModelVisual.BelongsToModel(renderers[i].transform))
                     continue;
                 renderers[i].GetPropertyBlock(block, 0);
                 block.SetColor("_BaseColor", tintOverride);

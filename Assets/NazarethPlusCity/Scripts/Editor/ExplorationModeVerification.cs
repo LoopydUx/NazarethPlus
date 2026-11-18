@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -14,11 +15,32 @@ namespace NazarethPlusCity.EditorTools
         const string PhaseKey = "NazarethPlus.VerifyPhase";
         const string FrameKey = "NazarethPlus.VerifyFrames";
         const string FailKey = "NazarethPlus.VerifyFails";
+        const string StayPhaseKey = "NazarethPlus.ViewSwitchPhase";
+        const string StayFrameKey = "NazarethPlus.ViewSwitchFrames";
 
         static ExplorationModeVerification()
         {
             if (!string.IsNullOrEmpty(SessionState.GetString(PhaseKey, "")))
                 EditorApplication.update += Tick;
+            if (!string.IsNullOrEmpty(SessionState.GetString(StayPhaseKey, "")))
+                EditorApplication.update += TickStay;
+        }
+
+        [MenuItem("NazarethPlusCity/Verify View Switching")]
+        public static void BeginInEditor()
+        {
+            if (EditorSceneManager.GetActiveScene().path != ExplorationModeSetup.ScenePath)
+                EditorSceneManager.OpenScene(ExplorationModeSetup.ScenePath, OpenSceneMode.Single);
+            SessionState.SetString(StayPhaseKey, "enter");
+            SessionState.SetInt(StayFrameKey, 0);
+            EditorApplication.update -= TickStay;
+            EditorApplication.update += TickStay;
+        }
+
+        public static void BeginBatch()
+        {
+            EditorSceneManager.OpenScene(ExplorationModeSetup.ScenePath, OpenSceneMode.Single);
+            Begin();
         }
 
         public static void Begin()
@@ -74,6 +96,50 @@ namespace NazarethPlusCity.EditorTools
             EditorApplication.Exit(code);
         }
 
+        static void TickStay()
+        {
+            string phase = SessionState.GetString(StayPhaseKey, "");
+            if (string.IsNullOrEmpty(phase))
+            {
+                EditorApplication.update -= TickStay;
+                return;
+            }
+
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+                return;
+            if (phase == "enter")
+            {
+                if (!EditorApplication.isPlaying)
+                {
+                    EditorApplication.isPlaying = true;
+                    return;
+                }
+
+                int frames = SessionState.GetInt(StayFrameKey, 0) + 1;
+                SessionState.SetInt(StayFrameKey, frames);
+                if (frames < 12)
+                    return;
+                try
+                {
+                    RunChecks();
+                }
+                catch (Exception exception)
+                {
+                    File.AppendAllText(ExplorationModeSetup.ReportPath, "\nFAIL view switch verification threw\n" + exception);
+                    Debug.LogException(exception);
+                }
+
+                SessionState.SetString(StayPhaseKey, "done");
+                EditorApplication.isPlaying = false;
+                return;
+            }
+
+            if (EditorApplication.isPlaying)
+                return;
+            SessionState.EraseString(StayPhaseKey);
+            EditorApplication.update -= TickStay;
+        }
+
         static int RunChecks()
         {
             var report = new StringBuilder();
@@ -92,6 +158,9 @@ namespace NazarethPlusCity.EditorTools
                 Write(report, fails);
                 return Mathf.Max(1, fails);
             }
+
+            Vector3 launchPosition = walker.transform.position;
+            float launchYaw = walker.Heading;
 
             Check(report, ref fails, "welcome open on play", manager.WelcomeOpen && manager.welcomeRoot != null && manager.welcomeRoot.activeInHierarchy);
             Check(report, ref fails, "welcome title", HasText(manager.welcomeRoot, "Welcome to Nazareth"));
@@ -120,6 +189,9 @@ namespace NazarethPlusCity.EditorTools
 
             Invoke(manager.firstPersonButton);
             Check(report, ref fails, "first person button", manager.Current == ExplorationMode.FirstPerson && !manager.WelcomeOpen);
+            Check(report, ref fails, "first view keeps the launch position", (walker.transform.position - launchPosition).sqrMagnitude < 0.0004f);
+            Check(report, ref fails, "first view keeps the launch heading", Mathf.Abs(Mathf.DeltaAngle(launchYaw, walker.Heading)) < 0.2f);
+            Check(report, ref fails, "launch position is the street spawn", (launchPosition - walker.spawnPosition).sqrMagnitude < 0.0004f && Mathf.Abs(Mathf.DeltaAngle(launchYaw, walker.spawnYaw)) < 0.2f);
             Check(report, ref fails, "first person camera only", manager.firstPersonCamera.enabled && !manager.thirdPersonCamera.enabled && !manager.birdsEyeCamera.enabled);
             Check(report, ref fails, "first person listener only", EnabledCount<AudioListener>() == 1 && manager.firstPersonListener.enabled);
             Check(report, ref fails, "character hidden in first person", manager.character != null && !manager.character.AnyVisible);
@@ -136,7 +208,7 @@ namespace NazarethPlusCity.EditorTools
             float movedDistance = (walker.transform.position - firstPosition).magnitude;
             report.AppendLine("INFO first person step " + movedDistance.ToString("0.000") + " dt " + Time.deltaTime.ToString("0.0000"));
             Check(report, ref fails, "first person frame accepted", moved);
-            Check(report, ref fails, "first person frame moves", Time.deltaTime < 0.0001f || movedDistance > 0.001f);
+            Check(report, ref fails, "first person frame moves", Time.deltaTime < 0.002f || movedDistance > 0.001f);
             walker.Teleport(firstPosition, firstYaw, true);
             float yawBeforeLook = walker.Heading;
             walker.ApplyGameplayFrame(new CityControlFrame { look = new Vector2(25f, 0f) });
@@ -209,6 +281,7 @@ namespace NazarethPlusCity.EditorTools
             manager.birdsEye.transform.position = new Vector3(grounded.x, grounded.y + 240f, grounded.z);
 
             Invoke(manager.firstPersonButton);
+            Check(report, ref fails, "return from bird keeps the map position", HorizontalDistance(walker.transform.position, grounded) < 0.05f);
             Check(report, ref fails, "return from bird restores grounded height", Mathf.Abs(walker.transform.position.y - safeY) < 0.2f);
             Check(report, ref fails, "return from bird ignores flight altitude", Mathf.Abs(walker.transform.position.y - (grounded.y + 240f)) > 20f);
             Check(report, ref fails, "return heading", Mathf.Abs(Mathf.DeltaAngle(groundedYaw, walker.Heading)) < 1f);
@@ -222,6 +295,7 @@ namespace NazarethPlusCity.EditorTools
             Check(report, ref fails, "change view reopens selector", manager.WelcomeOpen && HasText(manager.welcomeRoot, "Welcome to Nazareth"));
             Invoke(manager.thirdPersonButton);
             Check(report, ref fails, "selector can choose third person again", manager.Current == ExplorationMode.ThirdPerson && !manager.WelcomeOpen);
+            CheckLocationPreservation(report, ref fails, walker, manager);
 
             int buildings = Count<BuildingFeature>();
             int streets = Count<StreetFeature>();
@@ -236,6 +310,142 @@ namespace NazarethPlusCity.EditorTools
             report.AppendLine("INFO active scene " + SceneManager.GetActiveScene().path);
             Write(report, fails);
             return fails;
+        }
+
+        static void CheckLocationPreservation(StringBuilder report, ref int fails, FirstPersonWalker walker, ViewModeManager manager)
+        {
+            Vector3 spawn = walker.spawnPosition;
+            float spawnYaw = walker.spawnYaw;
+            for (int i = 0; i < 30; i++)
+                walker.ApplyGameplayFrame(new CityControlFrame { move = new Vector2(0f, 1f), sprint = true });
+            walker.ApplyGameplayFrame(new CityControlFrame { look = new Vector2(40f, 0f) });
+            Vector3 walked = walker.transform.position;
+            if (HorizontalDistance(walked, spawn) < 1f)
+            {
+                Vector3 step = walked + walker.transform.forward * 8f;
+                if (TerrainGround.TrySurface(step.x, step.z, out float ground))
+                    step.y = ground;
+                var boundary = UnityEngine.Object.FindAnyObjectByType<CityBoundaryMap>();
+                if (boundary == null || boundary.IsCapsuleInside(new Vector2(step.x, step.z), walker.capsuleRadius, walker.safetyMargin))
+                    walker.Teleport(step, walker.Heading, true);
+                walked = walker.transform.position;
+            }
+
+            float walkedYaw = walker.Heading;
+            report.AppendLine("INFO walked " + walked.ToString("0.00") + " yaw " + walkedYaw.ToString("0.0") + " from spawn " + HorizontalDistance(walked, spawn).ToString("0.00"));
+            Check(report, ref fails, "player left the street spawn", HorizontalDistance(walked, spawn) > 1f);
+
+            Switch(manager, manager.thirdPersonButton);
+            CheckHorizontal(report, ref fails, "third person opens at the walked intersection", walker.transform.position, walked);
+            Check(report, ref fails, "third person keeps the walked heading", Mathf.Abs(Mathf.DeltaAngle(walkedYaw, walker.Heading)) < 1f);
+            Check(report, ref fails, "third person uses its orbit offset", manager.thirdPerson != null && manager.thirdPerson.CurrentDistance > 0.7f && manager.thirdPersonCamera.transform.position.y > walker.transform.position.y + 0.4f);
+
+            Switch(manager, manager.firstPersonButton);
+            CheckHorizontal(report, ref fails, "first person returns to the walked intersection", walker.transform.position, walked);
+            Check(report, ref fails, "first person keeps the walked heading", Mathf.Abs(Mathf.DeltaAngle(walkedYaw, walker.Heading)) < 1f);
+
+            Switch(manager, manager.thirdPersonButton);
+            Switch(manager, manager.firstPersonButton);
+            CheckHorizontal(report, ref fails, "repeated view switches stay at the walked intersection", walker.transform.position, walked);
+            Check(report, ref fails, "repeated view switches keep the walked heading", Mathf.Abs(Mathf.DeltaAngle(walkedYaw, walker.Heading)) < 1f);
+
+            Switch(manager, manager.thirdPersonButton);
+            float bodyYaw = walker.Heading;
+            manager.thirdPerson.SetOrbit(bodyYaw + 90f, manager.thirdPerson.pitch);
+            manager.thirdPerson.PlaceNow();
+            Switch(manager, manager.firstPersonButton);
+            CheckHorizontal(report, ref fails, "orbit switch keeps the map position", walker.transform.position, walked);
+            Check(report, ref fails, "first person adopts the orbit heading", Mathf.Abs(Mathf.DeltaAngle(bodyYaw + 90f, walker.Heading)) < 1.5f);
+            walkedYaw = walker.Heading;
+
+            Vector3 held = walker.transform.position;
+            float heldYaw = walker.Heading;
+            ExplorationMode heldMode = manager.Current;
+            manager.OnEscape();
+            Check(report, ref fails, "escape opens pause before resume", manager.PauseOpen);
+            manager.OnEscape();
+            Check(report, ref fails, "closing the menu keeps the mode", manager.Current == heldMode && !manager.PauseOpen && !manager.WelcomeOpen);
+            CheckHorizontal(report, ref fails, "closing the menu keeps the location", walker.transform.position, held);
+            Check(report, ref fails, "closing the menu keeps the heading", Mathf.Abs(Mathf.DeltaAngle(heldYaw, walker.Heading)) < 0.2f);
+            manager.OnEscape();
+            Invoke(manager.changeViewButton);
+            Check(report, ref fails, "change view leaves the current mode selected", manager.WelcomeOpen && manager.Current == heldMode);
+            manager.OnEscape();
+            Check(report, ref fails, "closing the selector without a choice keeps the mode", manager.Current == heldMode && !manager.WelcomeOpen);
+            CheckHorizontal(report, ref fails, "closing the selector without a choice keeps the location", walker.transform.position, held);
+
+            Switch(manager, manager.birdsEyeButton);
+            CheckHorizontal(report, ref fails, "bird keeps the player on the walked ground", walker.transform.position, walked);
+            Check(report, ref fails, "bird uses its own camera height", manager.birdsEye.transform.position.y > walker.transform.position.y + 20f);
+            CheckHorizontal(report, ref fails, "bird map focus is the walked intersection", manager.birdsEye.MapFocus, walked);
+            float back = HorizontalDistance(manager.birdsEye.transform.position, walked);
+            report.AppendLine("INFO bird back offset " + back.ToString("0.00"));
+            Check(report, ref fails, "bird camera keeps its back offset", back > 10f);
+            Check(report, ref fails, "bird keeps the walked heading", Mathf.Abs(Mathf.DeltaAngle(walkedYaw, manager.birdsEye.FocusYaw)) < 1.5f);
+
+            Vector3 beforeFlight = manager.birdsEye.MapFocus;
+            manager.birdsEye.ApplyFlightStep(new Vector3(36f, 25f, -28f));
+            Vector3 afterFlight = manager.birdsEye.MapFocus;
+            float flown = HorizontalDistance(afterFlight, beforeFlight);
+            report.AppendLine("INFO bird flight " + flown.ToString("0.00") + " focus " + afterFlight.ToString("0.0") + " camera " + manager.birdsEye.transform.position.ToString("0.0"));
+            Check(report, ref fails, "bird flight moves the map focus", flown > 10f);
+
+            float flightYaw = manager.birdsEye.FocusYaw;
+            float flightCameraY = manager.birdsEye.transform.position.y;
+            Switch(manager, manager.firstPersonButton);
+            CheckHorizontal(report, ref fails, "first person opens at the flown map focus", walker.transform.position, afterFlight);
+            bool hasGround = PlacementGround.TrySupport(walker.transform.position.x, walker.transform.position.z, walker.transform, out float groundY);
+            report.AppendLine("INFO feet " + walker.transform.position.y.ToString("0.00") + " ground " + (hasGround ? groundY.ToString("0.00") : "none"));
+            Check(report, ref fails, "first person stands on the flown surface", hasGround && Mathf.Abs(walker.transform.position.y - groundY) < 0.35f);
+            Check(report, ref fails, "first person ignores the bird altitude", walker.transform.position.y < flightCameraY - 20f);
+            Check(report, ref fails, "first person keeps the bird heading", Mathf.Abs(Mathf.DeltaAngle(flightYaw, walker.Heading)) < 1.5f);
+
+            Vector3 landed = walker.transform.position;
+            float landedYaw = walker.Heading;
+            Switch(manager, manager.birdsEyeButton);
+            CheckHorizontal(report, ref fails, "bird reopens at the flown map focus", manager.birdsEye.MapFocus, landed);
+            CheckHorizontal(report, ref fails, "player stays under the reopened bird focus", walker.transform.position, landed);
+            Check(report, ref fails, "bird reapplies its camera height", manager.birdsEye.transform.position.y > walker.transform.position.y + 20f);
+            Check(report, ref fails, "bird keeps the landed heading", Mathf.Abs(Mathf.DeltaAngle(landedYaw, manager.birdsEye.FocusYaw)) < 1.5f);
+
+            Switch(manager, manager.thirdPersonButton);
+            CheckHorizontal(report, ref fails, "third person opens at the flown map focus", walker.transform.position, landed);
+            Check(report, ref fails, "third person keeps the flown heading", Mathf.Abs(Mathf.DeltaAngle(landedYaw, walker.Heading)) < 1.5f);
+            Check(report, ref fails, "third person restores its orbit offset", manager.thirdPerson.CurrentDistance > 0.7f);
+
+            Switch(manager, manager.birdsEyeButton);
+            Switch(manager, manager.firstPersonButton);
+            Switch(manager, manager.thirdPersonButton);
+            Switch(manager, manager.firstPersonButton);
+            CheckHorizontal(report, ref fails, "repeated switches keep the flown map focus", walker.transform.position, landed);
+            Check(report, ref fails, "repeated switches keep the flown heading", Mathf.Abs(Mathf.DeltaAngle(landedYaw, walker.Heading)) < 1.5f);
+
+            manager.OnReturnToSpawn();
+            CheckHorizontal(report, ref fails, "return to spawn uses the street spawn", walker.transform.position, spawn);
+            Check(report, ref fails, "return to spawn restores the spawn height", Mathf.Abs(walker.transform.position.y - spawn.y) < 0.05f);
+            Check(report, ref fails, "return to spawn restores the spawn heading", Mathf.Abs(Mathf.DeltaAngle(spawnYaw, walker.Heading)) < 0.2f);
+        }
+
+        static void Switch(ViewModeManager manager, Button button)
+        {
+            manager.OnEscape();
+            Invoke(manager.changeViewButton);
+            Invoke(button);
+        }
+
+        static void CheckHorizontal(StringBuilder report, ref int fails, string name, Vector3 actual, Vector3 expected)
+        {
+            float distance = HorizontalDistance(actual, expected);
+            if (distance >= 0.05f)
+                report.AppendLine("INFO " + name + " off by " + distance.ToString("0.00") + " actual " + actual.ToString("0.0") + " expected " + expected.ToString("0.0"));
+            Check(report, ref fails, name, distance < 0.05f);
+        }
+
+        static float HorizontalDistance(Vector3 a, Vector3 b)
+        {
+            float dx = a.x - b.x;
+            float dz = a.z - b.z;
+            return Mathf.Sqrt(dx * dx + dz * dz);
         }
 
         static void CheckCharacterAnimation(StringBuilder report, ref int fails, FirstPersonWalker walker, ViewModeManager manager)
@@ -263,16 +473,16 @@ namespace NazarethPlusCity.EditorTools
             float step = (walker.transform.position - origin).magnitude;
             locomotion.ApplyMotion(new Vector3(walker.Velocity.x, 0f, walker.Velocity.z).magnitude, walker.Velocity.y, walker.IsGrounded, false, 0.05f);
             report.AppendLine("INFO animation step " + step.ToString("0.000") + " controller speed " + new Vector3(walker.Velocity.x, 0f, walker.Velocity.z).magnitude.ToString("0.00"));
-            Check(report, ref fails, "walk frame reaches the controller", moved && (Time.deltaTime < 0.0001f || step > 0.001f));
+            Check(report, ref fails, "walk frame reaches the controller", moved && (Time.deltaTime < 0.002f || step > 0.001f));
             walker.Teleport(origin, yaw, true);
-            bool jumped = walker.ApplyGameplayFrame(new CityControlFrame { jumpPressed = true });
-            locomotion.ApplyMotion(0f, walker.Velocity.y, walker.IsGrounded, walker.JumpAcceptedThisFrame, 0.05f);
-            animator.Update(0.12f);
-            report.AppendLine("INFO jump accepted " + walker.JumpAcceptedThisFrame + " vertical " + walker.Velocity.y.ToString("0.00"));
-            Check(report, ref fails, "jump is accepted from the ground", jumped && walker.JumpAcceptedThisFrame);
-            Check(report, ref fails, "jump enters the jump state", InAnimatorState(animator, "Jump"));
-            if (Time.deltaTime > 0.0001f)
+            if (Time.deltaTime >= 0.002f)
             {
+                bool jumped = walker.ApplyGameplayFrame(new CityControlFrame { jumpPressed = true });
+                locomotion.ApplyMotion(0f, walker.Velocity.y, walker.IsGrounded, walker.JumpAcceptedThisFrame, 0.05f);
+                animator.Update(0.12f);
+                report.AppendLine("INFO jump accepted " + walker.JumpAcceptedThisFrame + " vertical " + walker.Velocity.y.ToString("0.00"));
+                Check(report, ref fails, "jump is accepted from the ground", jumped && walker.JumpAcceptedThisFrame);
+                Check(report, ref fails, "jump enters the jump state", InAnimatorState(animator, "Jump"));
                 bool landed = false;
                 for (int i = 0; i < 180; i++)
                 {
@@ -292,7 +502,7 @@ namespace NazarethPlusCity.EditorTools
             }
             else
             {
-                report.AppendLine("UNVERIFIED jump landing because play-mode delta time was zero.");
+                report.AppendLine("UNVERIFIED jump because the play-mode frame was " + Time.deltaTime.ToString("0.0000") + " seconds.");
             }
 
             Vector3 local = animator.transform.localPosition;

@@ -89,6 +89,32 @@ namespace NazarethPlusCity
             return found;
         }
 
+        public static bool TrySupport(float east, float north, Transform ignore, out float y)
+        {
+            y = 0f;
+            var terrain = CityTerrain.Active != null ? CityTerrain.Active : Object.FindAnyObjectByType<CityTerrain>();
+            float top = terrain != null ? terrain.maxWorldY + 80f : 900f;
+            float bottom = terrain != null ? terrain.minWorldY - 40f : -80f;
+            Vector3 origin = new Vector3(east, top, north);
+            for (int step = 0; step < 16; step++)
+            {
+                float distance = origin.y - bottom;
+                if (distance < 0.2f)
+                    return false;
+                if (!Physics.Raycast(origin, Vector3.down, out RaycastHit hit, distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                    return false;
+                if (!Skip(hit.collider, null, ignore) && IsWalkSurface(hit.collider) && hit.normal.y >= 0.4f)
+                {
+                    y = hit.point.y;
+                    return true;
+                }
+
+                origin = hit.point + Vector3.down * 0.08f;
+            }
+
+            return false;
+        }
+
         public static bool TryRestoreHeight(float east, float north, BoxCollider footprint, float yawDegrees, float scale, out float groundY)
         {
             groundY = 0f;

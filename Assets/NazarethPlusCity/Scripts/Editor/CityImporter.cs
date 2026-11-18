@@ -254,6 +254,8 @@ namespace NazarethPlusCity.EditorTools
 
         static void BuildBuildings(CityReport report, CityGenerationSettings settings, CityMaterials materials, MeshLibrary library, MeshLibrary foundations, TerrainHeightField terrain, GeoProjection projection, PlayableRegion region, Transform parent, List<GeoFeature> features, Dictionary<string, GameObject> existing, HashSet<string> used, HashSet<string> names)
         {
+            var models = BuildingModelLibrary.Load(features, report.ModelNotes);
+            var unplacedModels = new HashSet<string>(models.Keys);
             for (int i = 0; i < features.Count; i++)
             {
                 if (i % 250 == 0)
@@ -360,17 +362,39 @@ namespace NazarethPlusCity.EditorTools
                 building.terrainNote = placement;
                 if (tintOverride)
                     building.ApplyTintOverride();
+                string modelClause = "";
+                if (models.TryGetValue(feature.Id, out BuildingModelBinding binding))
+                {
+                    if (BuildingModelLibrary.TryAttach(go, binding, building.meshBaseLocalY, out string modelError))
+                    {
+                        report.ModelBuildings++;
+                        unplacedModels.Remove(feature.Id);
+                        modelClause = "; GLB " + binding.SourceFile + " (" + binding.MatchNote + ")";
+                    }
+                    else
+                    {
+                        report.ModelFailures++;
+                        unplacedModels.Remove(feature.Id);
+                        report.ValidationFailures.Add("Building " + feature.Id + " kept its extrusion because " + binding.SourceFile + " did not attach: " + modelError);
+                        modelClause = "; GLB " + binding.SourceFile + " failed (" + modelError + "); extrusion kept";
+                    }
+                }
+
                 MarkStatic(go);
                 report.GeneratedBuildings++;
                 string reason = decision.detail + "; mesh height " + meshHeight.ToString("0.##") + " m; level base Y " + levelBase.ToString("0.00") + "; " + placement + "; parts " + written + "; " + RelationText(relation);
                 if (!string.IsNullOrEmpty(note))
                     reason += "; " + note;
+                reason += modelClause;
                 reason += Extras(feature);
                 if (written == 0)
                     reason += "; mesh was not created";
                 report.Add("Building", feature.Id, "Generated", reason);
                 RememberRelation(report, feature.Id, relation);
             }
+
+            foreach (string id in unplacedModels)
+                report.ModelNotes.Add("Model for " + id + " was not placed on a generated building.");
         }
 
         static void BuildStreets(CityReport report, CityGenerationSettings settings, CityMaterials materials, MeshLibrary library, TerrainHeightField terrain, GeoProjection projection, PlayableRegion region, PathsD boundaryPaths, Transform parent, List<GeoFeature> features, Dictionary<string, GameObject> existing, HashSet<string> used, HashSet<string> names)
@@ -708,10 +732,11 @@ namespace NazarethPlusCity.EditorTools
             hintText.fontSize = 20;
             hintText.alignment = TextAnchor.MiddleCenter;
             hintText.color = new Color(1f, 0.98f, 0.94f, 0.92f);
-            hintText.text = "WASD walk    Mouse look    Shift sprint    Space jump    B add asset    Esc menu    R return to street";
+            hintText.text = "WASD walk    Mouse look    Shift sprint    Space jump    F ladder    B add asset    Esc menu    R return to street";
             hintText.raycastTarget = false;
             hint.AddComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.75f);
             PlacementHudBuilder.Ensure(canvasObject.transform, false);
+            LadderHud.Ensure(canvasObject.transform);
             return canvasObject.transform;
         }
 
@@ -1411,7 +1436,7 @@ namespace NazarethPlusCity.EditorTools
                     var filters = building.GetComponentsInChildren<MeshFilter>(true);
                     for (int f = 0; f < filters.Length; f++)
                     {
-                        if (filters[f].GetComponent<BuildingFoundation>() != null)
+                        if (filters[f].GetComponent<BuildingFoundation>() != null || BuildingModelVisual.BelongsToModel(filters[f].transform))
                             continue;
                         mesh = filters[f].sharedMesh;
                         break;
@@ -1554,7 +1579,8 @@ namespace NazarethPlusCity.EditorTools
             text.AppendLine(CityCoordinateFrame.AxisSummary);
             text.AppendLine("GeoJSON is WGS84 with coordinates ordered longitude, latitude. Building extrusion height is separate from ground elevation.");
             text.AppendLine("Terrain elevation uses localGroundY = (sourceElevation - elevationOrigin) * worldUnitsPerMetre.");
-            text.AppendLine("Building models in Data/building_models are not used. Every building is a footprint extrusion.");
+            text.AppendLine("Matched building models are imported from " + BuildingModelLibrary.RelativeFolder + " into Assets/NazarethPlusCity/Generated/BuildingModels and referenced by the saved scene.");
+            text.AppendLine("Buildings using a GLB: " + report.ModelBuildings + ". Buildings using an extrusion: " + (report.GeneratedBuildings - report.ModelBuildings) + ". GLB attach failures: " + report.ModelFailures + ".");
             text.AppendLine();
             text.AppendLine("Boundary features: " + report.SourceBoundary);
             text.AppendLine("Buildings: source " + report.SourceBuildings + ", generated " + report.GeneratedBuildings + ", skipped " + report.SkippedBuildings);
@@ -1565,6 +1591,10 @@ namespace NazarethPlusCity.EditorTools
             text.AppendLine("  inside " + report.StreetsInside + ", outside " + report.StreetsOutside + ", crossing " + report.StreetsCross + ", in hole " + report.StreetsHole);
             text.AppendLine();
             foreach (string note in report.Notes)
+                text.AppendLine(note);
+            text.AppendLine();
+            text.AppendLine("Building models:");
+            foreach (string note in report.ModelNotes)
                 text.AppendLine(note);
             text.AppendLine();
             text.AppendLine("Outside features (retained, not moved):");
@@ -2013,7 +2043,9 @@ namespace NazarethPlusCity.EditorTools
             {
                 var record = buildings[i].GetComponent<FeatureRecord>();
                 string id = record != null ? record.featureId : buildings[i].name;
-                lines.Add(id + "\t" + buildings[i].levelBaseY.ToString("0.000", CultureInfo.InvariantCulture));
+                var model = buildings[i].GetComponentInChildren<BuildingModelVisual>(true);
+                string source = model != null ? model.sourceFile : "extrusion";
+                lines.Add(id + "\t" + buildings[i].levelBaseY.ToString("0.000", CultureInfo.InvariantCulture) + "\t" + source);
             }
 
             lines.Sort(StringComparer.Ordinal);
@@ -2294,6 +2326,9 @@ namespace NazarethPlusCity.EditorTools
             public readonly List<string> OutsideIds = new List<string>();
             public readonly List<string> CrossingIds = new List<string>();
             public readonly List<string> HoleIds = new List<string>();
+            public int ModelBuildings;
+            public int ModelFailures;
+            public readonly List<string> ModelNotes = new List<string>();
             public int TallFoundations;
             public int UncoveredBuildings;
             public readonly List<string> TallFoundationIds = new List<string>();

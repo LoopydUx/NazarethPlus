@@ -1,0 +1,138 @@
+Building model sample passed.
+Scene Assets/NazarethPlusCity/Scenes/NazarethPlusCity.unity
+Building model folder: Data/building_models. Catalog: Data/building_models.json.
+Duplicate stable feature ids in buildings.geojson: 0.
+Derived map way/1072682430 -> way/1072682430 by stable feature id. File ceca39ebb1ea4e6894a7760ebf9779c5.glb yaw 225 scale 1.21 offset 0 E, 0 N.
+Derived map bldg-1792530028154-g20nka -> bldg-1792530028154-g20nka by stable feature id. File 63765f1a7f504e88bc69cfc908301b6b.glb yaw 226 scale 1.8 offset 0 E, 0 N.
+Explicit map 2febe5f1-1db2-400e-b905-f28445661560 -> way/583523590 (catalog id is properties.id, stable feature id is the GeoJSON id). File e9f1f40e676d454da9ba651aed65bb42.glb yaw 242 scale 2.05 offset 0.5 E, -9 N.
+Explicit map a64cd6ea-b32e-48de-9b73-8a0a5aac7ae1 -> way/741277388 (catalog id is properties.id, stable feature id is the GeoJSON id). File d13c221c18d142bd86cf6d83fe6b9e58.glb yaw 254 scale 1.55 offset 4.5 E, -12 N.
+Derived map way/1157250968 -> way/1157250968 by stable feature id. File be7dc716220946ec879ac47c85160f02.glb yaw 202 scale 0.9 offset 0 E, 0 N.
+Derived map bldg-1793468222984-6aq6wb -> bldg-1793468222984-6aq6wb by stable feature id. File 9a91a59c577a41e1af48248d8cdd6ae9.glb yaw 282 scale 1 offset 0 E, 0 N.
+Derived map bldg-1793470246111-909x5t -> bldg-1793470246111-909x5t by stable feature id. File d76d587ba70849a38d6bc37b05a2ebd4.glb yaw 13 scale 1 offset 9.5 E, -4 N.
+Explicit map eb8469ea-cd82-4d6c-86c0-96b7c9e98ca8 -> relation/14434382 (catalog id is properties.id, stable feature id is the GeoJSON id). File 97a598719a7f4a7d89ce3f3021c4e628.glb yaw 6 scale 1 offset 0 E, 0 N.
+Derived map way/623457838 -> way/623457838 by stable feature id. File 42134dd487224ea9a84c0cb3b68752e6.glb yaw 258 scale 1.05 offset 0 E, 0 N.
+Unlisted GLB Data/building_models/Assets/military_trenches_equipment_ladder_wood_s_ydxqael_high.glb is not a catalog building and was not imported.
+Unlisted GLB Data/building_models/Assets/nazareth-green-wheelie-bin-closed.glb is not a catalog building and was not imported.
+Unlisted GLB files: 2.
+Model match summary: mapped 9, missing 0, duplicate 0, ambiguous 0, imported 9, reused 0.
+Second import pass:
+Duplicate stable feature ids in buildings.geojson: 0.
+Derived map way/1072682430 -> way/1072682430 by stable feature id. File ceca39ebb1ea4e6894a7760ebf9779c5.glb yaw 225 scale 1.21 offset 0 E, 0 N.
+Derived map bldg-1792530028154-g20nka -> bldg-1792530028154-g20nka by stable feature id. File 63765f1a7f504e88bc69cfc908301b6b.glb yaw 226 scale 1.8 offset 0 E, 0 N.
+Explicit map 2febe5f1-1db2-400e-b905-f28445661560 -> way/583523590 (catalog id is properties.id, stable feature id is the GeoJSON id). File e9f1f40e676d454da9ba651aed65bb42.glb yaw 242 scale 2.05 offset 0.5 E, -9 N.
+Explicit map a64cd6ea-b32e-48de-9b73-8a0a5aac7ae1 -> way/741277388 (catalog id is properties.id, stable feature id is the GeoJSON id). File d13c221c18d142bd86cf6d83fe6b9e58.glb yaw 254 scale 1.55 offset 4.5 E, -12 N.
+Derived map way/1157250968 -> way/1157250968 by stable feature id. File be7dc716220946ec879ac47c85160f02.glb yaw 202 scale 0.9 offset 0 E, 0 N.
+Derived map bldg-1793468222984-6aq6wb -> bldg-1793468222984-6aq6wb by stable feature id. File 9a91a59c577a41e1af48248d8cdd6ae9.glb yaw 282 scale 1 offset 0 E, 0 N.
+Derived map bldg-1793470246111-909x5t -> bldg-1793470246111-909x5t by stable feature id. File d76d587ba70849a38d6bc37b05a2ebd4.glb yaw 13 scale 1 offset 9.5 E, -4 N.
+Explicit map eb8469ea-cd82-4d6c-86c0-96b7c9e98ca8 -> relation/14434382 (catalog id is properties.id, stable feature id is the GeoJSON id). File 97a598719a7f4a7d89ce3f3021c4e628.glb yaw 6 scale 1 offset 0 E, 0 N.
+Derived map way/623457838 -> way/623457838 by stable feature id. File 42134dd487224ea9a84c0cb3b68752e6.glb yaw 258 scale 1.05 offset 0 E, 0 N.
+Unlisted GLB Data/building_models/Assets/military_trenches_equipment_ladder_wood_s_ydxqael_high.glb is not a catalog building and was not imported.
+Unlisted GLB Data/building_models/Assets/nazareth-green-wheelie-bin-closed.glb is not a catalog building and was not imported.
+Unlisted GLB files: 2.
+Model match summary: mapped 9, missing 0, duplicate 0, ambiguous 0, imported 0, reused 9.
+PASS nine models mapped
+PASS second pass reuses imports
+PASS second pass imports nothing new
+Scene buildings 5774.
+PASS way/1072682430 model attached
+PASS way/1072682430 has one model child
+PASS way/1072682430 keeps feature id
+PASS way/1072682430 keeps properties
+PASS way/1072682430 keeps height override
+PASS way/1072682430 keeps tint override
+PASS way/1072682430 model is parented to the building
+PASS way/1072682430 is not parented to the player
+PASS way/1072682430 yaw 225 (error 0.00 deg)
+PASS way/1072682430 scale (1.21, 1.21, 1.21)
+PASS way/1072682430 horizontal offset 0.00 E, 0.00 N
+PASS way/1072682430 materials are URP Lit (5 renderers)
+INFO way/1072682430 textured materials 0 of 5.
+PASS way/1072682430 extrusion renderers are hidden
+PASS way/1072682430 extrusion colliders are off
+INFO way/1072682430 has no foundation object.
+PASS way/1072682430 model collider
+PASS way/1072682430 ground Y 327.46 vs level base 327.46
+INFO way/1072682430 model 35.0 x 22.6 x 35.0 m, footprint 33.1 x 34.6 m, center offset 1.8 m.
+PASS way/1072682430 overlaps its footprint
+PASS way/1072682430 wall rays hit the model (4/4, physics 4/4)
+PASS way/1072682430 roof landing Y 349.45
+PASS way/1072682430 is not under the view manager
+PASS way/1072682430 pose stays put when view cameras toggle
+PASS way/623457838 model attached
+PASS way/623457838 has one model child
+PASS way/623457838 keeps feature id
+PASS way/623457838 keeps properties
+PASS way/623457838 keeps height override
+PASS way/623457838 keeps tint override
+PASS way/623457838 model is parented to the building
+PASS way/623457838 is not parented to the player
+PASS way/623457838 yaw 258 (error 0.00 deg)
+PASS way/623457838 scale (1.05, 1.05, 1.05)
+PASS way/623457838 horizontal offset 0.00 E, 0.00 N
+PASS way/623457838 materials are URP Lit (15 renderers)
+INFO way/623457838 textured materials 1 of 15.
+PASS way/623457838 extrusion renderers are hidden
+PASS way/623457838 extrusion colliders are off
+PASS way/623457838 foundation stays visible and solid
+PASS way/623457838 model collider
+PASS way/623457838 ground Y 233.39 vs level base 233.39
+INFO way/623457838 model 14.1 x 10.5 x 10.7 m, footprint 22.9 x 12.6 m, center offset 0.1 m.
+PASS way/623457838 overlaps its footprint
+PASS way/623457838 wall rays hit the model (4/4, physics 4/4)
+PASS way/623457838 roof landing Y 242.45
+PASS way/623457838 is not under the view manager
+PASS way/623457838 pose stays put when view cameras toggle
+PASS relation/14434382 model attached
+PASS relation/14434382 has one model child
+PASS relation/14434382 keeps feature id
+PASS relation/14434382 keeps properties
+PASS relation/14434382 keeps height override
+PASS relation/14434382 keeps tint override
+PASS relation/14434382 model is parented to the building
+PASS relation/14434382 is not parented to the player
+PASS relation/14434382 yaw 6 (error 0.00 deg)
+PASS relation/14434382 scale (1.00, 1.00, 1.00)
+PASS relation/14434382 horizontal offset 0.00 E, 0.00 N
+PASS relation/14434382 materials are URP Lit (32 renderers)
+PASS relation/14434382 has textured materials (8)
+PASS relation/14434382 extrusion renderers are hidden
+PASS relation/14434382 extrusion colliders are off
+PASS relation/14434382 foundation stays visible and solid
+PASS relation/14434382 model collider
+PASS relation/14434382 ground Y 228.59 vs level base 228.59
+INFO relation/14434382 model 57.8 x 22.1 x 49.2 m, footprint 58.8 x 44.3 m, center offset 0.0 m.
+PASS relation/14434382 overlaps its footprint
+PASS relation/14434382 wall rays hit the model (4/4, physics 4/4)
+PASS relation/14434382 roof landing Y 250.47
+PASS relation/14434382 is not under the view manager
+PASS relation/14434382 pose stays put when view cameras toggle
+PASS bldg-1793470246111-909x5t model attached
+PASS bldg-1793470246111-909x5t has one model child
+PASS bldg-1793470246111-909x5t keeps feature id
+PASS bldg-1793470246111-909x5t keeps properties
+PASS bldg-1793470246111-909x5t keeps height override
+PASS bldg-1793470246111-909x5t keeps tint override
+PASS bldg-1793470246111-909x5t model is parented to the building
+PASS bldg-1793470246111-909x5t is not parented to the player
+PASS bldg-1793470246111-909x5t yaw 13 (error 0.00 deg)
+PASS bldg-1793470246111-909x5t scale (1.00, 1.00, 1.00)
+PASS bldg-1793470246111-909x5t horizontal offset 9.50 E, -4.00 N
+PASS bldg-1793470246111-909x5t materials are URP Lit (7 renderers)
+INFO bldg-1793470246111-909x5t textured materials 0 of 7.
+PASS bldg-1793470246111-909x5t extrusion renderers are hidden
+PASS bldg-1793470246111-909x5t extrusion colliders are off
+INFO bldg-1793470246111-909x5t has no foundation object.
+PASS bldg-1793470246111-909x5t model collider
+PASS bldg-1793470246111-909x5t ground Y 213.49 vs level base 213.49
+INFO bldg-1793470246111-909x5t model 69.1 x 35.6 x 41.4 m, footprint 70.5 x 47.4 m, center offset 10.4 m.
+PASS bldg-1793470246111-909x5t overlaps its footprint
+PASS bldg-1793470246111-909x5t wall rays hit the model (4/4, physics 4/4)
+PASS bldg-1793470246111-909x5t roof landing Y 242.30
+PASS bldg-1793470246111-909x5t is not under the view manager
+PASS bldg-1793470246111-909x5t pose stays put when view cameras toggle
+PASS way/1080291863 has no GLB
+PASS way/1080291863 extrusion stays visible (2)
+PASS way/1080291863 extrusion stays solid (2)
+INFO extrusion sample way/1080291863.
+Ladder climbing is not implemented. Data/building_models/Assets/military_trenches_equipment_ladder_wood_s_ydxqael_high.glb is an unlisted prop, not a building or a climb target.
+View cameras and the shared walker are separate from building objects, so first- and third-person switching does not move model placement or colliders.

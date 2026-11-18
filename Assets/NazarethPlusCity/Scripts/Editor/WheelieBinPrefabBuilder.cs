@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -51,14 +50,7 @@ namespace NazarethPlusCity.EditorTools
 
         static void ReadGlb(byte[] file, out string json, out byte[] bin)
         {
-            if (file.Length < 20 || file[0] != 'g' || file[1] != 'l' || file[2] != 'T' || file[3] != 'F')
-                throw new InvalidDataException("The bin file is not a glTF binary.");
-            int jsonLength = BitConverter.ToInt32(file, 12);
-            json = Encoding.UTF8.GetString(file, 20, jsonLength).Trim();
-            int binHeader = 20 + jsonLength;
-            int binLength = BitConverter.ToInt32(file, binHeader);
-            bin = new byte[binLength];
-            Buffer.BlockCopy(file, binHeader + 8, bin, 0, binLength);
+            GlbImporter.Read(file, out json, out bin);
         }
 
         static List<Material> BuildMaterials(JsonMini root, byte[] bin)
@@ -506,44 +498,12 @@ namespace NazarethPlusCity.EditorTools
 
         static float[] ReadFloats(byte[] bin, JsonMini accessors, JsonMini views, int accessorIndex, int components)
         {
-            JsonMini accessor = accessors[accessorIndex];
-            int count = accessor.Get("count").Int;
-            JsonMini view = views[accessor.Get("bufferView").Int];
-            int offset = (view.Try("byteOffset", out JsonMini viewOffset) ? viewOffset.Int : 0) + (accessor.Try("byteOffset", out JsonMini accessorOffset) ? accessorOffset.Int : 0);
-            int stride = view.Try("byteStride", out JsonMini strideNode) && strideNode.Int > 0 ? strideNode.Int : components * 4;
-            var values = new float[count * components];
-            for (int i = 0; i < count; i++)
-            {
-                int at = offset + i * stride;
-                for (int c = 0; c < components; c++)
-                    values[i * components + c] = BitConverter.ToSingle(bin, at + c * 4);
-            }
-
-            return values;
+            return GlbImporter.ReadFloats(bin, accessors, views, accessorIndex, components);
         }
 
         static int[] ReadIndices(byte[] bin, JsonMini accessors, JsonMini views, int accessorIndex)
         {
-            JsonMini accessor = accessors[accessorIndex];
-            int count = accessor.Get("count").Int;
-            int component = accessor.Get("componentType").Int;
-            JsonMini view = views[accessor.Get("bufferView").Int];
-            int offset = (view.Try("byteOffset", out JsonMini viewOffset) ? viewOffset.Int : 0) + (accessor.Try("byteOffset", out JsonMini accessorOffset) ? accessorOffset.Int : 0);
-            int width = component == 5125 ? 4 : component == 5123 ? 2 : 1;
-            int stride = view.Try("byteStride", out JsonMini strideNode) && strideNode.Int > 0 ? strideNode.Int : width;
-            var indices = new int[count];
-            for (int i = 0; i < count; i++)
-            {
-                int at = offset + i * stride;
-                if (width == 4)
-                    indices[i] = BitConverter.ToInt32(bin, at);
-                else if (width == 2)
-                    indices[i] = BitConverter.ToUInt16(bin, at);
-                else
-                    indices[i] = bin[at];
-            }
-
-            return indices;
+            return GlbImporter.ReadIndices(bin, accessors, views, accessorIndex);
         }
 
         static string SafeObjectName(string name, int index)

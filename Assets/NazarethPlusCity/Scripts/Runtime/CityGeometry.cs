@@ -520,6 +520,7 @@ namespace NazarethPlusCity
             feature.appliedHeightMeters = height;
             if (feature.useTintOverride)
                 feature.ApplyTintOverride();
+            BuildingModelVisual.HideExtrusion(feature);
 #if UNITY_EDITOR
             if (feature.GetComponent<MeshFilter>()?.sharedMesh != null)
                 UnityEditor.EditorUtility.SetDirty(feature.GetComponent<MeshFilter>().sharedMesh);

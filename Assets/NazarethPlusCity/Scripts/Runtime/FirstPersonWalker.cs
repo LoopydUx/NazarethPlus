@@ -71,6 +71,7 @@ namespace NazarethPlusCity
         public bool InputBlocked { get; set; }
         public bool AllowLookWhileUnlocked { get; set; }
         public bool SuppressFlightVertical { get; set; }
+        public bool MovementOverridden { get; set; }
         public Vector3 LastSafePosition => _hasSafe ? _lastSafe : spawnPosition;
         public bool HasSafePosition => _hasSafe;
         public float Heading => transform.eulerAngles.y;
@@ -154,11 +155,26 @@ namespace NazarethPlusCity
             JumpAcceptedThisFrame = false;
             if (_paused || InputBlocked || drive == WalkerDrive.Parked)
                 return false;
+            if (MovementOverridden)
+            {
+                Velocity = Vector3.zero;
+                IsGrounded = false;
+                return true;
+            }
+
             if (drive == WalkerDrive.FirstPerson)
                 Look(frame.look);
+
             MoveBody(frame);
             EnforceBoundary();
             return true;
+        }
+
+        public void ApplyLookOnly(Vector2 lookDelta)
+        {
+            if (_paused || InputBlocked || drive != WalkerDrive.FirstPerson)
+                return;
+            Look(lookDelta);
         }
 
         void BindActions()
@@ -340,6 +356,28 @@ namespace NazarethPlusCity
             EnsureReady();
             EnforceBoundary();
             return transform.position;
+        }
+
+        public Vector3 ClampToPlayable(Vector3 world, Vector3 insideFallback)
+        {
+            EnsureReady();
+            if (_boundary == null || _boundary.IsCapsuleInside(new Vector2(world.x, world.z), capsuleRadius, safetyMargin))
+                return world;
+            Vector3 safe = insideFallback;
+            if (!_boundary.IsCapsuleInside(new Vector2(safe.x, safe.z), capsuleRadius, safetyMargin))
+                safe = HasSafePosition ? LastSafePosition : spawnPosition;
+            Vector3 outside = world;
+            for (int i = 0; i < 16; i++)
+            {
+                Vector3 mid = (safe + outside) * 0.5f;
+                if (_boundary.IsCapsuleInside(new Vector2(mid.x, mid.z), capsuleRadius, safetyMargin))
+                    safe = mid;
+                else
+                    outside = mid;
+            }
+
+            safe.y = world.y;
+            return safe;
         }
 
         bool FellBelowGround(Vector3 position)

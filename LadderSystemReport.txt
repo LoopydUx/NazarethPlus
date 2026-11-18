@@ -1,0 +1,10 @@
+NazarethPlusCity ladder system — dense rung update
+Source mesh height: 2.420 m
+Dense rung scale: 0.38 (rungs ~2.6× closer, matching the former short-top look on every section)
+Section height (dense): 0.920 m
+Wood per section: 2
+Starting coins: 25
+Average climb height (ActiveHeight, including overrides): 8.636 m
+Sections per average ladder: ceil(8.636 / 0.920) = 10
+Starting wood = 5 × 10 × 2 = 100
+Example short final section: climb 9.00 m / section 0.920 m => 10 sections, last uses 0.723 m.
